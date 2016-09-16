@@ -1,0 +1,673 @@
+/*
+  Copyright (c) 2010 Toru Tamaki
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation
+  files (the "Software"), to deal in the Software without
+  restriction, including without limitation the rights to use,
+  copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following
+  conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#include <iostream>
+#include <cstdio>
+#include <cmath>
+#include <ctime>
+
+#include <cutil.h>
+
+#include "3dregistration.h"
+#include "engine.h"
+#include "rply.h"
+
+using namespace std;
+
+
+
+
+void InitPointCloud(const float* h_X, const int Xsize,
+		    const float* h_Y, const int Ysize,
+		    float* &points1, float* &points2, float* &points3)
+{
+
+  const float* h_Xx = &h_X[Xsize*0];
+  const float* h_Xy = &h_X[Xsize*1];
+  const float* h_Xz = &h_X[Xsize*2];
+
+  const float* h_Yx = &h_Y[Ysize*0];
+  const float* h_Yy = &h_Y[Ysize*1];
+  const float* h_Yz = &h_Y[Ysize*2];
+
+  // Generate a random point cloud:
+  points1 = new float[Xsize*3];
+  for (int i=0; i<Xsize; i++)
+    {
+      float* point = &points1[i*3];
+      point[0] = h_Xx[i];
+      point[1] = h_Xy[i];
+      point[2] = h_Xz[i];
+    }
+  // Inform the engine about the first point cloud ("index" 0)...
+  EnginePointCloudData(0, points1, Xsize);
+  // ... and some fancy attributes like color and point size.
+  EnginePointCloudDecoration(0, 1.0f, 1.0f, 0.0f, 2.0f);
+
+  // Another point cloud:
+  points2 = new float[Ysize*3];
+  for (int i=0; i<Ysize; i++)
+    {
+      float* point = &points2[i*3];
+      point[0] = h_Yx[i];
+      point[1] = h_Yy[i];
+      point[2] = h_Yz[i];
+    }
+  // The second point cloud has "index" 1.
+  EnginePointCloudData(1, points2, Ysize);
+  EnginePointCloudDecoration(1, 0.0f, 1.0f, 1.0f, 2.0f);
+
+
+#if 1
+
+  // third point cloud:
+  points3 = new float[Ysize*3];
+  for (int i=0; i<Ysize; i++)
+    {
+      float* point = &points3[i*3];
+      point[0] = h_Yx[i];
+      point[1] = h_Yy[i];
+      point[2] = h_Yz[i];
+    }
+
+  EnginePointCloudData(2, points3, Ysize);
+  EnginePointCloudDecoration(2, 1.0f, 1.0f, 1.0f, 2.0f);
+
+#endif
+
+}
+
+
+
+
+
+
+void UpdatePointCloud2(int Ysize, float* points2,
+		       const float* h_Y, const float* h_R, const float* h_t)
+{
+  const float* h_Yx = &h_Y[Ysize*0];
+  const float* h_Yy = &h_Y[Ysize*1];
+  const float* h_Yz = &h_Y[Ysize*2];
+
+  // Another point cloud:
+  for (int i=0; i<Ysize; i++)
+    {
+      float* point = &points2[i*3];
+      point[0] = (h_R[0]*h_Yx[i] + h_R[1]*h_Yy[i] + h_R[2]*h_Yz[i]) + h_t[0];
+      point[1] = (h_R[3]*h_Yx[i] + h_R[4]*h_Yy[i] + h_R[5]*h_Yz[i]) + h_t[1];
+      point[2] = (h_R[6]*h_Yx[i] + h_R[7]*h_Yy[i] + h_R[8]*h_Yz[i]) + h_t[2];
+    }
+  // The second point cloud has "index" 1.
+  EnginePointCloudData(1, points2, Ysize);
+  //EnginePointCloudDecoration(1, 0.0f, 1.0f, 1.0f, 2.0f);
+}
+
+
+
+
+
+// callback function for reading vertecis
+static int ply_vertex_cb(p_ply_argument argument) {
+
+  void *pdata;
+  long indexCoord;
+  ply_get_argument_user_data(argument, &pdata, &indexCoord);
+
+  float *h_Xx = *((float**)pdata); // pointer to array for storing vertices
+
+  long index;
+  ply_get_argument_element(argument, NULL, &index); // index of a vertex
+
+  h_Xx[index] = (float)ply_get_argument_value(argument);
+
+  return 1;
+}
+
+
+//
+// Read points from ply format file.
+//
+// X: pointer to a pointer of memory area where points will be stored.
+//    on entry, X should be NULL (not allocated)
+//    on exit, memory area of (Xsize*3*sizeof(float)) is allocated,
+//             and points are stored in the order of
+//             [X_x1 X_x2 .... X_x(Xsize-1) X_y1 X_y2 .... X_y(Xsize-1)  X_z1 X_z2 .... X_z(Xsize-1) ],
+//             where (X_xi X_yi X_zi) is the i-th point in X.
+// Xsize: the number of points in the file.
+//    on exit, Xsize is returned.
+// filename: filename of a ply format file.
+//           Note that this reads points of "element vertex" of property float x, y, z.
+//           Be care those points are actually 3D points, not vertices of a triangle mesh face.
+//
+void readPointsFromPLYFile(float **X, int &Xsize, const char* filename){
+
+    p_ply ply;
+
+    ply = ply_open(filename, NULL);
+    if (!ply) {
+      fprintf(stderr, "there is no inputPLY file [%s].\n", filename);
+      fprintf(stderr, "or, inputPLY file [%s] is not ply format.\n", filename);
+      exit(1);
+    }
+    if (!ply_read_header(ply)) {
+      fprintf(stderr, "inputPLY file [%s] is not ply format.\n", filename);
+      exit(1);
+    }
+
+    Xsize = ply_set_read_cb(ply, "vertex", "x", ply_vertex_cb, NULL, 1); // dummy call
+
+    float *h_X = new float [Xsize * 3];
+    float* h_Xx = &h_X[Xsize*0];
+    float* h_Xy = &h_X[Xsize*1];
+    float* h_Xz = &h_X[Xsize*2];
+    ply_set_read_cb(ply, "vertex", "x", ply_vertex_cb, &h_Xx, 1);
+    ply_set_read_cb(ply, "vertex", "y", ply_vertex_cb, &h_Xy, 2);
+    ply_set_read_cb(ply, "vertex", "z", ply_vertex_cb, &h_Xz, 3);
+
+    if (!ply_read(ply)){  // read entire data at once
+      fprintf(stderr, "inputPLY file [%s] can not be read.\n", filename);
+      exit(1);
+    }
+
+    ply_close(ply);
+
+    *X = h_X;
+}
+
+
+//
+// Read points from file.
+//
+// X: pointer to a pointer of memory area where points will be stored.
+//    on entry, X should be NULL (not allocated)
+//    on exit, memory area of (Xsize*3*sizeof(float)) is allocated,
+//             and points are stored in the order of
+//             [X_x1 X_x2 .... X_x(Xsize) X_y1 X_y2 .... X_y(Xsize)  X_z1 X_z2 .... X_z(Xsize) ],
+//             where (X_xi X_yi X_zi) is the i-th point in X.
+// Xsize: the number of points in the file.
+//    on entry, Xsize should be given.
+// filename: filename of a text file of points.
+//    file format ... x y z coordinates of a point are stored in a line.
+//    example:
+// 0.068554 0.177457 0.005994 
+// 0.081259 0.162169 0.071445 
+// 0.085632 0.151002 0.085873 
+// ...
+void readPointsFromFile(float **X, int Xsize, const char* filename){
+
+  FILE *fp;
+  float x, y, z;
+  int i = 0;
+
+  float *h_X = new float [Xsize * 3];
+  float *h_Xx = &h_X[Xsize*0];
+  float *h_Xy = &h_X[Xsize*1];
+  float *h_Xz = &h_X[Xsize*2];
+
+  if((fp = fopen(filename, "r")) != NULL){
+    while (i < Xsize && fscanf(fp,"%f%f%f", &x, &y, &z)!=EOF){
+      h_Xx[i] = x;
+      h_Xy[i] = y;
+      h_Xz[i] = z;
+      i++;
+    }
+    fclose(fp);
+  } else {
+    fprintf(stderr, "No file [%s]\n", filename);
+    exit(1);
+  }
+
+  *X = h_X;
+}
+
+
+
+
+
+void pointsReduction(float **X, int &Xsize,
+		     float random_sampling_percentage, bool initialize_rand = true){
+
+#ifndef WIN32
+  if (initialize_rand) srand48((long)time(NULL));
+#else
+  if (initialize_rand) srand((long)time(NULL));
+#endif
+
+  int number_of_randomly_sampled_points = 0;
+  random_sampling_percentage /= 100.0f;
+
+  int *flag = new int[Xsize];
+  for(int i = 0; i < Xsize; i++)
+#ifndef WIN32
+    if(drand48() < random_sampling_percentage){
+      flag[i] = 1;
+      number_of_randomly_sampled_points++;
+    }else
+      flag[i] = 0;
+#else
+    if(rand()/(double)RAND_MAX < random_sampling_percentage){
+      flag[i] = 1;
+      number_of_randomly_sampled_points++;
+    }else
+      flag[i] = 0;
+#endif
+
+
+  float *Xorg = *X;
+  float *Xorgx = &Xorg[Xsize*0];
+  float *Xorgy = &Xorg[Xsize*1];
+  float *Xorgz = &Xorg[Xsize*2];
+
+  float *Xnew = new float [number_of_randomly_sampled_points * 3];
+  float *Xnewx = &Xnew[number_of_randomly_sampled_points*0];
+  float *Xnewy = &Xnew[number_of_randomly_sampled_points*1];
+  float *Xnewz = &Xnew[number_of_randomly_sampled_points*2];
+
+  number_of_randomly_sampled_points = 0;
+  for(int i = 0; i < Xsize; i++){
+    if(flag[i] == 1){
+      Xnewx[number_of_randomly_sampled_points] = Xorgx[i];
+      Xnewy[number_of_randomly_sampled_points] = Xorgy[i];
+      Xnewz[number_of_randomly_sampled_points] = Xorgz[i];
+      number_of_randomly_sampled_points++;
+    }
+  }
+  delete [] flag;
+
+  delete [] *X;
+  *X = Xnew;
+  Xsize = number_of_randomly_sampled_points;
+}
+
+
+
+
+void init_RT(float *h_R, float *h_t){
+	
+  // set to Identity matrix
+  h_R[0] = 1.0f;
+  h_R[1] = 0.0f;
+  h_R[2] = 0.0f;
+  h_R[3] = 0.0f;
+  h_R[4] = 1.0f;
+  h_R[5] = 0.0f;
+  h_R[6] = 0.0f;
+  h_R[7] = 0.0f;
+  h_R[8] = 1.0f;
+
+  h_t[0] = 0.0f;
+  h_t[1] = 0.0f;
+  h_t[2] = 0.0f;
+}
+
+
+
+
+void printRT(const float* R, const float* t){
+  printf("R\n");
+  for(int r=0; r<9; r++){
+    printf("%f ", R[r]);
+    if((r+1)%3==0) printf("\n");
+  }
+  printf("t\n");
+  for(int r=0; r<3; r++)
+    printf("%f ", t[r]);
+  printf("\n");
+
+}
+
+void saveRTtoFile(const float* R, const float* t, const char* filename){
+
+  FILE *fp;
+  if((fp = fopen(filename, "w")) != NULL){
+    for(int r=0; r<9; r++){
+      fprintf(fp, "%f ", R[r]);
+      if((r+1)%3==0) fprintf(fp,"\n");
+    }
+    for(int r=0; r<3; r++)
+      fprintf(fp,"%f ", t[r]);
+    fprintf(fp,"\n");
+  }
+  fclose(fp);
+}
+
+void loadRTfromFile(float* R, float* t, const char* filename){
+
+  FILE *fp;
+  if((fp = fopen(filename, "r")) != NULL){
+    if(12 != fscanf(fp,"%f%f%f%f%f%f%f%f%f%f%f%f",
+		    &R[0], &R[1], &R[2],
+		    &R[3], &R[4], &R[5],
+		    &R[6], &R[7], &R[8],
+		    &t[0], &t[1], &t[2]
+		    )){
+      fprintf(stderr, "Fail to read RT from file [%s]\n", filename);
+      exit(1);
+    }
+
+    }
+
+}
+
+
+
+int main(int argc, char** argv){
+  //
+  // analyzing command options
+  //
+
+  char *pointFileX, *pointFileY;
+  int wrongArg = 0;
+
+
+  // Read filenames of point clouds X and Y.
+  // File format is txt or ply. see readPointsFromFile() or readPointsFromPLYFile().
+  if (cutGetCmdLineArgumentstr(argc, (const char **) argv, "pointFileX", &pointFileX) &&
+      cutGetCmdLineArgumentstr(argc, (const char **) argv, "pointFileY", &pointFileY)){
+    cout << "option: pointFileX= " << pointFileX << endl;
+    cout << "option: pointFileY=" << pointFileY << endl;
+  } else
+    wrongArg = 1;
+
+  // if "-ply" is specified, assume files are in ply format.
+  int isPLY = cutCheckCmdLineFlag(argc, (const char **) argv, "ply"); // ply file format
+
+  int Xsize, Ysize;
+
+  if (!isPLY){ // if not a ply file, number of points should be specified.
+    if (cutGetCmdLineArgumenti(argc, (const char **) argv, "Xsize", &Xsize) &&
+	cutGetCmdLineArgumenti(argc, (const char **) argv, "Ysize", &Ysize)){
+      cout << "option: number of points in X= " << Xsize << endl;
+      cout << "option: number of points in Y= " << Ysize << endl;
+    } else
+      wrongArg = 1;
+  }
+
+  if(wrongArg){
+    cerr << "Wrong arguments. see src." << endl;
+    cerr << "min ||X - (R*Y+t) || " << endl;
+    exit(1);
+  }
+
+
+  //
+  // select algorithm
+  //
+  int isICP = cutCheckCmdLineFlag(argc, (const char **) argv, "icp");
+  int isEMICP = cutCheckCmdLineFlag(argc, (const char **) argv, "emicp");
+  int isEMICP_CPU = cutCheckCmdLineFlag(argc, (const char **) argv, "emicpcpu");
+  int isSoftassign = cutCheckCmdLineFlag(argc, (const char **) argv, "softassign");
+
+  if (!isICP && !isEMICP && !isEMICP_CPU && !isSoftassign)
+    isSoftassign = 1; // default algorithm
+
+
+
+
+  //
+  // initialize parameters
+  //
+  registrationParameters param;
+
+  if(isSoftassign){ // softassign
+
+    // default parameters
+    param.JMAX = 100;
+    param.I0 = 5;
+    param.I1 = 3;
+    param.alpha = 3.0f;
+    param.T_0 = 100.0f;
+    param.TFACTOR = 0.95f;
+    param.moutlier = (float)(1/sqrtf(param.T_0)*expf(-1.0f));
+
+    cutGetCmdLineArgumenti(argc, (const char **) argv, "JMAX",  &param.JMAX);
+    cutGetCmdLineArgumenti(argc, (const char **) argv, "I0",    &param.I0);
+    cutGetCmdLineArgumenti(argc, (const char **) argv, "I1",    &param.I1);
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "alpha", &param.alpha);
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "T_0",   &param.T_0);
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "TFACTOR", &param.TFACTOR);
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "moutlier", &param.moutlier);
+    
+    cout << "softassgin paramters" << endl
+	 << "JMAX " << param.JMAX << endl
+	 << "I0 " << param.I0 << endl
+	 << "I1 " << param.I1 << endl
+	 << "alpha " << param.alpha << endl
+	 << "T_0 " << param.T_0 << endl
+	 << "TFACTOR " << param.TFACTOR << endl
+	 << "moutlier " << param.moutlier << endl;
+  }
+
+  if(isICP){ // ICP
+
+    // default parameters
+    param.maxIteration = 30;
+
+    cutGetCmdLineArgumenti(argc, (const char **) argv, "maxIteration",  &param.maxIteration);
+
+    cout << "ICP paramters" << endl
+	 << "maxIteration " << param.maxIteration << endl;
+  }
+
+  if(isEMICP || isEMICP_CPU){ // EM-ICP
+
+    // default parameters
+    param.sigma_p2 = 0.01f;
+    param.sigma_inf = 0.00001f;
+    param.sigma_factor = 0.9f;
+    param.d_02 = 0.01f;
+
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "sigma_p2",  &param.sigma_p2);
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "sigma_inf",  &param.sigma_inf);
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "sigma_factor",  &param.sigma_factor);
+    cutGetCmdLineArgumentf(argc, (const char **) argv, "d_02",    &param.d_02);
+
+    cout << "EM-ICP parameters" << endl
+	 << "sigma_p2 " << param.sigma_p2 << endl
+	 << "sigma_inf " << param.sigma_inf << endl
+	 << "sigma_factor " << param.sigma_factor << endl
+	 << "d_02 " << param.d_02 << endl;
+
+  }
+
+  param.noviewer = cutCheckCmdLineFlag(argc, (const char **) argv, "noviewer");
+  param.notimer  = cutCheckCmdLineFlag(argc, (const char **) argv, "notimer");
+  param.nostop   = cutCheckCmdLineFlag(argc, (const char **) argv, "nostop");
+
+
+  param.argc = argc;
+  param.argv = argv;
+
+
+
+
+
+  //
+  // read points, and initialize
+  //
+  float *h_X, *h_Y;
+
+  // h_X stores points as the order of
+  // [X_x1 X_x2 .... X_x(Xsize-1) X_y1 X_y2 .... X_y(Xsize-1)  X_z1 X_z2 .... X_z(Xsize-1) ],
+  // where (X_xi X_yi X_zi) is the i-th point in X.
+  //
+  // h_Y does as the same way.
+  
+  if(!isPLY){
+    readPointsFromFile(&h_X, Xsize, pointFileX);
+    readPointsFromFile(&h_Y, Ysize, pointFileY);
+  }else{
+    readPointsFromPLYFile(&h_X, Xsize, pointFileX);
+    readPointsFromPLYFile(&h_Y, Ysize, pointFileY);
+    cout << "Xsize: " << Xsize << endl
+	 << "Ysize: " << Ysize << endl;
+  }
+
+  
+  float pointsReductionRate;
+  if (cutGetCmdLineArgumentf(argc, (const char **) argv, "pointsReductionRate", &pointsReductionRate)) {
+    pointsReduction(&h_X, Xsize, pointsReductionRate);
+    pointsReduction(&h_Y, Ysize, pointsReductionRate);
+    cout << "number of points are reduced to "
+	 << pointsReductionRate << "% of original." << endl
+	 << "Xsize: " << Xsize << endl
+	 << "Ysize: " << Ysize << endl;
+  }else{
+    if (cutGetCmdLineArgumentf(argc, (const char **) argv, "pointsReductionRateX", &pointsReductionRate) ) {
+      pointsReduction(&h_X, Xsize, pointsReductionRate);
+      cout << "number of points are reduced to "
+	   << pointsReductionRate << "% of original." << endl
+	   << "Xsize: " << Xsize << endl;
+    }
+    if (cutGetCmdLineArgumentf(argc, (const char **) argv, "pointsReductionRateY", &pointsReductionRate) ) {
+      pointsReduction(&h_Y, Ysize, pointsReductionRate);
+      cout << "number of points are reduced to "
+	   << pointsReductionRate << "% of original." << endl
+	   << "Ysize: " << Ysize << endl;
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+  if(!param.noviewer){
+    // PointCloudViewer
+    EngineInit();
+    EngineCameraSetup(0.2f);
+    InitPointCloud(h_X, Xsize,  h_Y, Ysize,
+                   param.points1, param.points2, param.points3);  // returns pointers points1,2,3 for visualization
+
+
+    // just view and exit
+    if (cutCheckCmdLineFlag(argc, (const char **) argv, "viewer"))
+      while(1)
+	      if (!EngineIteration()) // PointCloudViewer
+	        exit(0);
+
+  }
+
+
+
+  float* h_R = new float [9]; // rotation matrix
+  float* h_t = new float [3]; // translation vector
+  init_RT(h_R, h_t); // set R to Identity matrix, t to zero vector
+
+
+
+
+
+  if(!param.noviewer && !param.nostop)
+    while(EngineIteration(Ysize, param.points2, h_Y,  h_R, h_t)); // PointCloudViewer
+    if(isWinFlag()) // press ESC ; exit
+      ;
+    else // press 'q' : continue
+      setWinFlag();
+
+
+  do {
+
+
+  {
+    char *loadRTfromFilename;
+    if(cutGetCmdLineArgumentstr(argc, (const char **) argv, "loadRTfromFile", &loadRTfromFilename))
+      loadRTfromFile(h_R, h_t, loadRTfromFilename);
+    else
+      init_RT(h_R, h_t); // set R to Identity matrix, t to zero vector
+  }
+  printRT(h_R, h_t);
+
+
+
+
+
+
+  clock_t start, end;
+  start = clock();
+
+  if(isICP)
+    icp(Xsize, Ysize, h_X, h_Y, // input
+	      h_R, h_t, // return
+	      param);
+  else if(isEMICP)
+    emicp(Xsize, Ysize, h_X, h_Y, // input
+	        h_R, h_t, // return
+	        param);
+  else if(isEMICP_CPU)
+    emicp_cpu(Xsize, Ysize, h_X, h_Y, // input
+	      h_R, h_t, // return
+	      param);
+  else
+    softassign(Xsize, Ysize, h_X, h_Y, // input
+	       h_R, h_t, //return
+	       param);
+
+  end = clock();
+  printf("elapsed %f\n", (double)(end - start) / CLOCKS_PER_SEC);
+
+
+  printRT(h_R, h_t);
+
+  {
+    char *saveRTtoFilename;
+    if(cutGetCmdLineArgumentstr(argc, (const char **) argv, "saveRTtoFile", &saveRTtoFilename))
+      saveRTtoFile(h_R, h_t, saveRTtoFilename);
+  }
+
+
+
+  if(!param.noviewer && !param.nostop)
+    while(EngineIteration(Ysize, param.points2, h_Y,  h_R, h_t)); // PointCloudViewer
+    if(isWinFlag()) // press ESC ; exit
+      break;
+    else // press 'q' : continue
+      setWinFlag();
+
+  }
+  while(!param.noviewer && !param.nostop);
+
+
+  if(!param.noviewer){
+    delete [] param.points1;
+    delete [] param.points2;
+    delete [] param.points3;
+    EngineShutDown();
+  }
+
+  delete [] h_X;
+  delete [] h_Y;
+  delete [] h_R;
+  delete [] h_t;
+
+
+
+  return 0;
+}
+

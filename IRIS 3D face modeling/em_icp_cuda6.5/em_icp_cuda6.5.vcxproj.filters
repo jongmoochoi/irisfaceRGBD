@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{7072ab67-0629-44bb-8ef7-160d868d273d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resources">
+      <UniqueIdentifier>{8bfa3c01-22a9-4925-86b5-e14666307e9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cuda">
+      <UniqueIdentifier>{fede4d33-1d2c-4a69-8428-10923b5fc80a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\simpleviewer">
+      <UniqueIdentifier>{f4b9dd0e-0c85-4c5a-805b-7bb68182ceaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="poseEstimation">
+      <UniqueIdentifier>{9e38bd00-d47d-4973-bb88-66ff9d133596}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\bilateral_filter.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\emicp.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\openNI_general.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Modeling_cu.cu">
+      <Filter>cuda</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\3dregistration.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\algebra.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DATA.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\eig3.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FaceBox.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FaceDetectLandmark.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FaceDetector.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generalCuda.cuh">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Modeling.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\orbcam.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\poseEstimation.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\stdafx.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Voxel.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Modeling_cu.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cudaMem.h" />
+    <ClInclude Include="src\openNI_general.h" />
+    <ClInclude Include="src\rply.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="test\OniSampleUtilities.h">
+      <Filter>src\simpleviewer</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\poseEstimation\cameraModule.h">
+      <Filter>poseEstimation</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\poseEstimation\facePoseEstimation.h">
+      <Filter>poseEstimation</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\poseEstimation\json.h">
+      <Filter>poseEstimation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FaceSegmentation.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\algebra.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\eig3.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\emicp_cpu.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FaceBox.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FaceDetectLandmark.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FaceDetector.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\findRTfromS.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\icp.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Modeling.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\orbcam.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\poseEstimation.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Voxel.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\dlib-18.17\dlib\all\source.cpp">
+      <Filter>resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rply.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\poseEstimation\cameraModule.cpp">
+      <Filter>poseEstimation</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\poseEstimation\facePoseEstimation.cpp">
+      <Filter>poseEstimation</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\poseEstimation\json.cpp">
+      <Filter>poseEstimation</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\poseEstimation\mesh.cpp">
+      <Filter>poseEstimation</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\poseEstimation\setup.cpp">
+      <Filter>poseEstimation</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\poseEstimation\utils.cpp">
+      <Filter>poseEstimation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FaceSegmentation.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

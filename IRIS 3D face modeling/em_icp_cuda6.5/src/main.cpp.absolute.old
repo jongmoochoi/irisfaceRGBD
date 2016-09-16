@@ -1,0 +1,530 @@
+/*
+  Copyright (c) 2010 Toru Tamaki
+
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation
+  files (the "Software"), to deal in the Software without
+  restriction, including without limitation the rights to use,
+  copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following
+  conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#include <iostream>
+#include <cstdio>
+#include <cmath>
+#include <ctime>
+
+#include <cutil.h>
+
+#include "3dregistration.h"
+#include "engine.h"
+#include "rply.h"
+
+#include "stdafx.h"
+#include "FaceBox.h"
+#include "FaceDetector.h"
+#include "Voxel.h"
+
+#include "poseEstimation.h"
+
+
+
+
+#include "cublas.h"
+
+using namespace std;
+
+
+/**********************/
+void UpdatePointCloud2(int Ysize, float* points2,
+		       const float* h_Y, const float* h_R, const float* h_t){
+  const float* h_Yx = &h_Y[0];
+  const float* h_Yy = &h_Y[Ysize];
+  const float* h_Yz = &h_Y[Ysize*2];
+
+  // Another point cloud:
+  for (int i=0; i<Ysize; i++)  {
+      float* point = &points2[i*3];
+      point[0] = (h_R[0]*h_Yx[i] + h_R[1]*h_Yy[i] + h_R[2]*h_Yz[i]) + h_t[0];
+      point[1] = (h_R[3]*h_Yx[i] + h_R[4]*h_Yy[i] + h_R[5]*h_Yz[i]) + h_t[1];
+      point[2] = (h_R[6]*h_Yx[i] + h_R[7]*h_Yy[i] + h_R[8]*h_Yz[i]) + h_t[2];
+    }
+  // The second point cloud has "index" 1.
+  //EnginePointCloudData(1, points2, Ysize);
+}
+/**********************/
+
+
+//
+// Read points from file.
+//
+// X: pointer to a pointer of memory area where points will be stored.
+//    on entry, X should be NULL (not allocated)
+//    on exit, memory area of (Xsize*3*sizeof(float)) is allocated,
+//             and points are stored in the order of
+//             [X_x1 X_x2 .... X_x(Xsize) X_y1 X_y2 .... X_y(Xsize)  X_z1 X_z2 .... X_z(Xsize) ],
+//             where (X_xi X_yi X_zi) is the i-th point in X.
+// Xsize: the number of points in the file.
+//    on entry, Xsize should be given.
+// filename: filename of a text file of points.
+//    file format ... x y z coordinates of a point are stored in a line.
+//    example:
+// 0.068554 0.177457 0.005994 
+// 0.081259 0.162169 0.071445 
+// 0.085632 0.151002 0.085873 
+// ...
+void readPointsFromFile(float **X, int Xsize, const char* filename){
+
+  FILE *fp;
+  float x, y, z;
+  int i = 0;
+
+  float *h_X = new float [Xsize * 3];
+  float *h_Xx = &h_X[Xsize*0];
+  float *h_Xy = &h_X[Xsize*1];
+  float *h_Xz = &h_X[Xsize*2];
+
+  if((fp = fopen(filename, "r")) != NULL){
+    while (i < Xsize && fscanf(fp,"%f%f%f", &x, &y, &z)!=EOF){
+      h_Xx[i] = x;
+      h_Xy[i] = y;
+      h_Xz[i] = z;
+      i++;
+    }
+    fclose(fp);
+  } else {
+    fprintf(stderr, "No file [%s]\n", filename);
+    exit(1);
+  }
+
+  *X = h_X;
+}
+/**********************/
+
+
+
+/**********************/
+void init_RT(float *h_R, float *h_t){
+	
+  // set to Identity matrix
+  h_R[0] = 1.0f;
+  h_R[1] = 0.0f;
+  h_R[2] = 0.0f;
+  h_R[3] = 0.0f;
+  h_R[4] = 1.0f;
+  h_R[5] = 0.0f;
+  h_R[6] = 0.0f;
+  h_R[7] = 0.0f;
+  h_R[8] = 1.0f;
+
+  h_t[0] = 0.0f;
+  h_t[1] = 0.0f;
+  h_t[2] = 0.0f;
+}
+/**********************/
+
+
+
+/**********************************************/
+/* Create a rotation matrix from euler angles	*/
+void eulerAngles2rotationMatrix(CvMat *out, float a, float b, float c) {
+		
+	CvMat *R1	= cvCreateMat(3,3,CV_64FC1);
+	CvMat *R2	= cvCreateMat(3,3,CV_64FC1);
+	CvMat *R3	= cvCreateMat(3,3,CV_64FC1);
+	CvMat *R3R2 = cvCreateMat(3,3,CV_64FC1);
+
+	float cosA = cos(a);
+	float cosB = cos(b);
+	float cosC = cos(c);
+	float sinA = sin(a);
+	float sinB = sin(b);
+	float sinC = sin(c);
+
+	cvSetIdentity(R1); 
+	cvSetIdentity(R2); 
+	cvSetIdentity(R3);
+	
+	if (	R1->rows==3 && R1->cols==3 
+		&&	R2->rows==3 && R2->cols==3
+		&&	R3->rows==3 && R3->cols==3) {
+		cvmSet(R1,1,1,cosA);
+		cvmSet(R1,2,2,cosA);
+		cvmSet(R1,1,2,-sinA);
+		cvmSet(R1,2,1,sinA);
+
+		cvmSet(R2,0,0,cosB);
+		cvmSet(R2,2,2,cosB);
+		cvmSet(R2,0,2,sinB);
+		cvmSet(R2,2,0,-sinB);
+
+		cvmSet(R3,0,0,cosC);
+		cvmSet(R3,1,1,cosC);
+		cvmSet(R3,0,1,-sinC);
+		cvmSet(R3,1,0,sinC);
+	} else {
+		fprintf(stderr, "Wrong size for the rotation matrix\n");
+		exit(4);
+	}
+
+	if (	out->rows==3 && out->cols==3
+		&&	R3R2->rows==3 && R3R2->cols==3) {
+		cvMatMul(R3,R2,R3R2);
+		cvMatMul(R3R2,R1,out);
+	}
+	else {
+		fprintf(stderr, "Wrong size for the rotation matrix\n");
+		exit(4);
+	}
+
+	cvReleaseMat(&R1);
+	cvReleaseMat(&R2);
+	cvReleaseMat(&R3);
+	cvReleaseMat(&R3R2);
+}
+/**********************/
+
+
+
+/**********************************/
+/* Find if two matrices are equal	*/
+void displayRendering(IplImage *img, float Xeuler, float Yeuler, float Zeuler, CvPoint pt) {
+	double Xx, Xy, Yx, Yy, Zx, Zy;
+	const double SCALE = 30;
+	CvMat *R = cvCreateMat(3,3,CV_64FC1);
+
+	eulerAngles2rotationMatrix(R,Xeuler*DEG2RAD,Yeuler*DEG2RAD,-Zeuler*DEG2RAD);
+
+	Xx = pt.x+SCALE*cvmGet(R,0,0);	Xy = pt.y-SCALE*cvmGet(R,0,1);
+	Yx = pt.x+SCALE*cvmGet(R,1,0);	Yy = pt.y-SCALE*cvmGet(R,1,1);
+	Zx = pt.x+SCALE*cvmGet(R,2,0);	Zy = pt.y-SCALE*cvmGet(R,2,1);
+
+	cvLine(img, pt, cvPoint((int)Xx,(int)Xy),CV_RGB(255,255,0),2,8,0);
+	cvLine(img, pt, cvPoint((int)Yx,(int)Yy),CV_RGB(0,255,0),2,8,0);
+	cvLine(img, pt, cvPoint((int)Zx,(int)Zy),CV_RGB(255,0,0),2,8,0);
+
+	cvReleaseMat(&R);
+}
+/**********************/
+
+
+
+/**********************************/
+/* Find if two matrices are equal	*/
+void displayRendering(IplImage *img, float *euler, CvPoint pt) {
+	float Xx, Xy, Yx, Yy, Zx, Zy;
+	const float SCALE = 30.0f;
+
+	Xx = pt.x+SCALE*euler[0];	Xy = pt.y-SCALE*euler[1];
+	Yx = pt.x+SCALE*euler[3];	Yy = pt.y-SCALE*euler[4];
+	Zx = pt.x+SCALE*euler[6];	Zy = pt.y-SCALE*euler[7];
+
+	cvLine(img, pt, cvPoint((int)Xx,(int)Xy),CV_RGB(255,255,0),2,8,0);
+	cvLine(img, pt, cvPoint((int)Yx,(int)Yy),CV_RGB(0,255,0),2,8,0);
+	cvLine(img, pt, cvPoint((int)Zx,(int)Zy),CV_RGB(255,0,0),2,8,0);
+}
+/**********************/
+
+
+
+
+/**********************/
+int main(/*int argc, char** argv*/){
+	
+	///////////////////////////////////////////////////////////////
+	// EM-ICP default parameters
+	registrationParameters param;
+	param.sigma_p2			= 0.01f;
+	param.sigma_inf		= 0.00001f;
+	param.sigma_factor	= 0.9f;//0.9f;
+	param.d_02				= 0.01f;
+	param.noviewer			= true;//true;
+	param.nostop			= false;
+	param.notimer			= true;
+	float* h_R		= new float[9];	// rotation matrix
+	float* h_t		= new float[3];	// translation vector
+	float *a			= new float[3];	// Euler angles
+	float *pre_a	= new float[3];	// previous Euler Angles
+	float *pre_t	= new float[3];	// Previous translation matrix
+	float *h_X=NULL, *h_Y=NULL;		// Point clouds to be used for the EM-ICP
+												// h_X stores points as the order of
+												// [X_x0 X_x1 .... X_x(Xsize-1) X_y0 X_y1 .... X_y(Xsize-1)  X_z0 X_z1 .... X_z(Xsize-1) ],
+												// where (X_xi X_yi X_zi) is the i-th point in X.
+
+	///////////////////////////////////////////////////////////////
+	//	OpenNI parameters
+	XnStatus nRetVal = XN_STATUS_OK; 
+	xn::Context context; 
+	nRetVal = context.Init(); 
+	// Error test
+	errorCheck(nRetVal);
+	// Create a depth generator 
+	xn::DepthGenerator gDepth;
+	// Create an gImage generator
+	xn::ImageGenerator gImage;	
+	nRetVal = gDepth.Create(context);
+	errorCheck(nRetVal);
+	nRetVal = gImage.Create(context);
+	errorCheck(nRetVal);	
+	// Get the metadata
+	xn::ImageMetaData g_gImageMD;
+	gImage.GetMetaData(g_gImageMD);
+	// Set it to VGA maps at 30 FPS 
+	XnMapOutputMode mapMode; 
+	mapMode.nXRes = XN_VGA_X_RES; 
+	mapMode.nYRes = XN_VGA_Y_RES; 
+	mapMode.nFPS = 30; 
+	// Set the Map output to depth/image
+	nRetVal = gDepth.SetMapOutputMode(mapMode); 
+	errorCheck(nRetVal);
+	nRetVal = gImage.SetMapOutputMode(mapMode); 
+	errorCheck(nRetVal);
+	// Align depth and rgb gImages;
+	gDepth.GetAlternativeViewPointCap().SetViewPoint(gImage);
+	// Start generating 
+	nRetVal = context.StartGeneratingAll(); 
+	errorCheck(nRetVal);
+	// Set the depth and gImage maps
+	const XnDepthPixel *pDepthMap = gDepth.GetDepthMap(); 
+	const XnUInt8 *pImageMap		= g_gImageMD.Data();
+	XnPoint3D  *pReal		= new XnPoint3D[MAX_I];
+	XnPoint3D  *pDepth	= new XnPoint3D[MAX_I]; 
+	
+	///////////////////////////////////////////////////////////////
+	//	OpenCV parameters
+	IplImage *img = cvCreateImage( cvSize(XN_VGA_X_RES ,XN_VGA_Y_RES), IPL_DEPTH_8U, CHANNELS );
+	IplImage *depth =	cvCreateImage( cvSize(XN_VGA_X_RES ,XN_VGA_Y_RES), IPL_DEPTH_8U, CHANNELS );	// 3 to be able to display different colors
+	IplImage *mask =	cvCreateImage( cvSize(XN_VGA_X_RES ,XN_VGA_Y_RES), IPL_DEPTH_8U, 1 );
+	IplImage *grey = cvCreateImage( cvSize(XN_VGA_X_RES ,XN_VGA_Y_RES), IPL_DEPTH_8U, 1 );
+	cvNamedWindow("img", CV_WINDOW_AUTOSIZE); 
+	cvMoveWindow("img", 0, 0);
+	bool	displayFaceTracker=true,				// Display the face bounding box if detected
+			displayDepth=false,						// Display the depth image instead of the RGB one
+			displayMask=false;						// Display the face mask
+	CvFont font;
+	double hScale=0.4;
+	double vScale=0.4;
+	int    lineWidth=1;
+	cvInitFont(&font,CV_FONT_HERSHEY_SIMPLEX|CV_FONT_ITALIC, hScale,vScale,0,lineWidth);
+
+	///////////////////////////////////////////////////////////////
+	// Needed for computation
+	// Extracted points
+	int nb_keyPoints[3]	= {0,0,0};
+	int Xsize=0, Ysize=0;
+	Voxel *keyPoints[3]	= {NULL,NULL,NULL};
+	keyPoints[CURRENT]	= new Voxel[NMAX];
+	keyPoints[PREVIOUS]	= new Voxel[NMAX];	
+	keyPoints[FIRST]		= new Voxel[NMAX];
+	FaceDetector faceDetector;
+	bool first=true;
+
+	///////////////////////////////////////////////////////////////	
+	// CUDA
+	cublasInit();
+	init_RT(h_R, h_t);
+	bool allocateMemory=true;
+
+	//////////////////////////////////////////////////////////////
+	//	Time measurement
+	clock_t start, end;
+			
+
+	////////////////////////////////////////////////////////////////////////
+	// Loop on frames
+	////////////////////////////////////////////////////////////////////////
+	while (true) { 
+		start = clock();
+	
+		//////////////////////////////////////////////////////////////////////
+		// Update the context
+		nRetVal = context.WaitOneUpdateAll(gDepth); 
+		errorCheck(nRetVal);
+
+		//////////////////////////////////////////////////////////////////////
+		// Compute the 3D values
+		int x=0, y=0;
+		// Set the projective values
+		for (int i=0; i<MAX_I; i++) {
+			pDepth[i].X = (XnFloat)x;
+			pDepth[i].Y = (XnFloat)y;
+			pDepth[i].Z = (short) pDepthMap[i];
+			// Update the line/column value
+			if (++x==XN_VGA_X_RES){
+				x=0;
+				y++;
+			}
+		}
+		// Compute the real world values
+ 		gDepth.ConvertProjectiveToRealWorld(MAX_I, pDepth, pReal);
+
+		//////////////////////////////////////////////////////////////////////
+		// Create the images
+		XnDepthPixel maxD, minD;
+		if (	faceDetector.IsFirst() ) {
+			maxD = findMaxDepth(pDepthMap, 0, XN_VGA_X_RES, 0, XN_VGA_Y_RES);
+			minD = findMinDepth(pDepthMap, 0, XN_VGA_X_RES, 0, XN_VGA_Y_RES);
+		} else {
+			maxD = faceDetector.getPreviousFaceBox().getMaxDepth()+SEARCHING_BOX_IN_DEPTH; 
+			minD = faceDetector.getPreviousFaceBox().getMinDepth()-SEARCHING_BOX_IN_DEPTH;
+		}
+		displayImageMap(	img, 
+								pImageMap);
+		displayDepthMap(	depth, 
+								pDepthMap, 
+								maxD, 
+								minD);
+
+		/////////////////////////////////////////////////
+		// Extract the face points
+		//	Set the images in the face detector
+		faceDetector.setXOy(depth);
+		// Create the grayscale image
+		cvConvertImage(img, grey, 0);
+		// Detect the face
+		bool faceDetected = faceDetector.detectFace(pDepthMap);
+		// Create the mask
+		createMask(mask, img, pDepthMap, faceDetector, faceDetected);
+		// Find the box containing the mask values
+		FaceBox maskBox = findBox(mask);		
+		// Extract the points
+		nb_keyPoints[CURRENT] = normalizeFace(	keyPoints[CURRENT],
+															maskBox.getHeight(), 
+															maskBox.getWidth(), 
+															NORMALIZED_FACE_HEIGHT, 
+															NORMALIZED_FACE_WIDTH, 
+															maskBox.getTopY(), 
+															maskBox.getLeftX(), 
+															pDepthMap, 
+															pReal,
+															grey);
+
+		///////////////////////////////////////////////////////////////
+		// Demean/Normalize face for EM-ICP
+		if (nb_keyPoints[CURRENT]>0) {
+			delete[] h_X;
+			h_X = new float[3*nb_keyPoints[CURRENT]];
+			setPoints(h_X, nb_keyPoints[CURRENT], keyPoints[CURRENT]);
+		}
+
+		///////////////////////////////////////////////////////////////
+		// Compute the pose
+		Xsize = nb_keyPoints[CURRENT];
+		Ysize = nb_keyPoints[FIRST];
+
+		
+		if (Xsize>0 && Ysize>0 && !first) {
+			poseEstimation(	Xsize, Ysize, h_X, h_Y, // input
+									h_R, h_t, // return
+									param,
+									a, pre_a, pre_t,
+									&allocateMemory);
+		}
+
+
+
+		if (first && (nb_keyPoints[CURRENT]>0 )) {
+			delete[] h_Y;
+			h_Y = new float[3*nb_keyPoints[CURRENT]];
+			nb_keyPoints[FIRST] = nb_keyPoints[CURRENT];
+			swapPoints(h_X,h_Y,nb_keyPoints[CURRENT]);
+
+			first = false;
+		}
+		//////////////////////////////////////////////////////////////////////
+		//	Display
+		displayRendering(img,h_R,cvPoint(30,60));
+		displayRendering(depth,h_R,cvPoint(30,60));
+		// Display the face tracker
+		if (displayFaceTracker) {
+			if (faceDetected) {
+				if (displayDepth)
+					cvRectangle(depth, cvPoint(faceDetector.getFaceBox().getLeftX(),faceDetector.getFaceBox().getTopY()),
+						cvPoint(faceDetector.getFaceBox().getRightX(),faceDetector.getFaceBox().getBottomY()),CV_RGB(255,0,0),2,8,0);
+				else 
+					cvRectangle(img, cvPoint(faceDetector.getFaceBox().getLeftX(),faceDetector.getFaceBox().getTopY()),
+						cvPoint(faceDetector.getFaceBox().getRightX(),faceDetector.getFaceBox().getBottomY()),CV_RGB(255,0,0),2,8,0);
+			}
+		}
+
+
+		// End of the timer
+		end = clock();
+		float cpuTime = (float)( end-start )/(float)( CLOCKS_PER_SEC ) ;
+		float fps = 1/cpuTime;
+		// Display the speed
+		char s[100];
+		sprintf(s, "Speed: %3.2f  frames/sec", fps);
+		cvPutText (img,s,cvPoint(250,450), &font, CV_RGB(0,255,0));
+		cvPutText (depth,s,cvPoint(250,450), &font, CV_RGB(255,50,100));
+
+
+
+		if (displayMask)
+			cvShowImage("img", mask);
+		else if (!displayDepth)
+			cvShowImage("img", img);			
+		else
+			cvShowImage("img", depth);
+		char key;
+		/////////////////////////////////////
+		// Key options for display
+		key = cvWaitKey(20);
+		if (key=='q')
+			break;
+		if (key=='t') {
+			displayFaceTracker=!(displayFaceTracker);
+		}
+		if (key=='d') {
+			displayDepth=!(displayDepth);
+		}
+		if (key=='m') {
+			displayMask=!(displayMask);
+		}
+		if (key=='r') {
+			first=true;
+		}
+	}	
+
+
+	if( !param.noviewer ){
+		delete[] param.points1;
+		delete[] param.points2;
+		delete[] param.points3;
+		EngineShutDown();
+	}
+	cublasShutdown();
+	context.Shutdown();
+	cvDestroyWindow( "img" );
+	cvReleaseImage(&img);
+	cvReleaseImage(&depth);
+	cvReleaseImage(&mask);
+	cvReleaseImage(&grey);
+	delete[] h_X;
+	delete[] h_Y;
+	delete[] h_R;
+	delete[] h_t;
+	delete[] a;
+	delete[] pre_a;
+	delete[] pre_t;
+	delete[] pDepth;
+	delete[] pReal;
+	releaseCUDAmemory();
+
+	return 0;
+}
+/**********************/

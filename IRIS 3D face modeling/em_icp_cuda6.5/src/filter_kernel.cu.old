@@ -1,0 +1,347 @@
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+/*
+ * Copyright 1993-2010 NVIDIA Corporation.  All rights reserved.
+ *
+ * Please refer to the NVIDIA end user license agreement (EULA) associated
+ * with this source code for terms and conditions that govern your use of
+ * this software. Any use, reproduction, disclosure, or distribution of
+ * this software and related documentation outside the terms of the EULA
+ * is strictly prohibited.
+ *
+ */
+
+#include "bilateralFilter.h"
+#include "cudaMem.h"
+#include "./Include/CUDA/shrUtils.h"
+#include <cutil_inline.h>
+#include <cutil_math.h>
+
+
+//////////////////////////////////////////////
+// TODO REMOVE THE WEIRD TEXTURE CRAP ????? //
+//////////////////////////////////////////////
+
+
+cudaArray* d_Array, *d_tempArray, *d_gaussianArray;
+float* d_gaussian;
+texture<uchar4, 2, cudaReadModeNormalizedFloat> rgbaTex;
+texture<float, 1, cudaReadModeElementType> gaussianTex;
+
+float *d_img;
+
+
+
+
+
+#ifndef _GENERAL_CUDA_H
+#define _GENERAL_CUDA_H
+
+// RGBA version
+// reads from 32-bit uint array holding 8-bit RGBA
+
+// convert floating point rgba color to 32-bit integer
+__device__ uint rgbaFloatToInt(float4 rgba)
+{
+    rgba.x = __saturatef(fabs(rgba.x));   // clamp to [0.0, 1.0]
+    rgba.y = __saturatef(fabs(rgba.y));
+    rgba.z = __saturatef(fabs(rgba.z));
+    rgba.w = __saturatef(fabs(rgba.w));
+    return (uint(rgba.w * 255.0f) << 24) | (uint(rgba.z * 255.0f) << 16) | (uint(rgba.y * 255.0f) << 8) | uint(rgba.x * 255.0f);
+}
+
+__device__ float rgbaFloat4ToFloat(float4 rgba) {
+	float4 decode_mask;
+
+	decode_mask.w = 1.0f;
+	decode_mask.z = 1.0f/255.0f;
+	decode_mask.y = 1.0f/65025.0f;
+	decode_mask.x = 1.0f/16581375.0f;
+
+	return dot( rgba, decode_mask );
+}
+
+
+__device__ float rgbaFloat4ToFloat2(float4 rgba)
+{
+    rgba.x = __saturatef(fabs(rgba.x));   // clamp to [0.0, 1.0]
+    rgba.y = __saturatef(fabs(rgba.y));
+    rgba.z = __saturatef(fabs(rgba.z));
+    rgba.w = __saturatef(fabs(rgba.w));
+	
+	uint tmp = (uint(rgba.w * 255.0f) << 24) | (uint(rgba.z * 255.0f) << 16) | (uint(rgba.y * 255.0f) << 8) | uint(rgba.x * 255.0f);
+
+    return (    *(float*)(&tmp)    );
+
+}
+
+
+__device__ float4 rgbaIntToFloat(uint c)
+{
+    float4 rgba;
+    rgba.x = (c & 0xff) * 0.003921568627f;       //  /255.0f;
+    rgba.y = ((c>>8) & 0xff) * 0.003921568627f;  //  /255.0f;
+    rgba.z = ((c>>16) & 0xff) * 0.003921568627f; //  /255.0f;
+    rgba.w = ((c>>24) & 0xff) * 0.003921568627f; //  /255.0f;
+    return rgba;
+}
+
+/*
+    Because a 2D gaussian mask is symmetry in row and column,
+    here only generate a 1D mask, and use the product by row 
+    and column index later.
+
+    1D gaussian distribution :
+        g(x, d) -- C * exp(-x^2/d^2), C is a constant amplifier
+
+    parameters:
+    og - output gaussian array in global memory
+    delta - the 2nd parameter 'd' in the above function
+    radius - half of the filter size
+             (total filter size = 2 * radius + 1)
+*/
+//use only one block
+__global__ void
+d_generate_gaussian(float *og, float delta, int radius)
+{
+    int x = threadIdx.x - radius;
+    og[threadIdx.x] = __expf(-(x * x) /
+        (2 * delta * delta));
+}                                     
+
+/*
+    Euclidean Distance (x, y, d) = exp((|x - y| / d)^2 / 2)
+*/
+__device__ float euclideanLen(float4 a, float4 b, float d)
+{
+
+    float mod = (b.x - a.x) * (b.x - a.x) +
+                (b.y - a.y) * (b.y - a.y) +
+                (b.z - a.z) * (b.z - a.z) +
+                (b.w - a.w) * (b.w - a.w) ;
+
+    return __expf(-mod / (2 * d * d));
+}
+
+
+// EUCLIDEAN LEN FOR floats
+__device__ float euclideanLen(float4 a, float4 b, float d)
+{
+
+    float mod = (b.x - a.x) * (b.x - a.x) +
+                (b.y - a.y) * (b.y - a.y) +
+                (b.z - a.z) * (b.z - a.z) +
+                (b.w - a.w) * (b.w - a.w) ;
+
+    return __expf(-mod / (2 * d * d));
+}
+
+
+
+
+//extern "C"
+void copyImage(uint *h_src, uint *d_dest,
+               int width, int height) {
+    cutilSafeCall(cudaMemcpy(d_dest, h_src, width * height * sizeof(uint), cudaMemcpyHostToDevice));
+}
+
+#endif
+
+
+
+
+#ifndef _FILTER_KERNEL_H_
+#define _FILTER_KERNEL_H_
+
+
+/*
+    Perform a simple bilateral filter.
+
+    Bilateral filter is a nonlinear filter that is a mixture of range 
+    filter and domain filter, the previous one preserves crisp edges and 
+    the latter one filters noise. The intensity value at each pixel in 
+    an image is replaced by a weighted average of intensity values from 
+    nearby pixels.
+
+    The weight factor is calculated by the product of domain filter
+    component(using the gaussian distribution as a spatial distance) as 
+    well as range filter component(Euclidean distance between center pixel
+    and the current neighbor pixel). Because this process is nonlinear, 
+    the sample just uses a simple pixel by pixel step. 
+
+    Texture fetches automatically clamp to edge of image. 1D gaussian array
+    is mapped to a 1D texture instead of using shared memory, which may 
+    cause severe bank conflict.
+
+    Threads are y-pass(column-pass), because the output is coalesced.
+
+    Parameters
+    od - pointer to output data in global memory
+    d_f - pointer to the 1D gaussian array
+    e_d - euclidean delta
+    w  - image width
+    h  - image height
+    r  - filter radius
+*/
+
+
+
+
+
+
+//column pass using coalesced global memory reads
+__global__ void
+d_bilateral_filter(float *od,
+                   float e_d, int w, int h, int r)
+{
+    uint x = __umul24(blockIdx.x, blockDim.x) + threadIdx.x;
+    uint y = __umul24(blockIdx.y, blockDim.y) + threadIdx.y;
+    if (x < w && y < h) {
+        float sum = 0.0f;
+        float factor =0.0f;
+        float4 t = make_float4(0.0f);
+        float4 center = tex2D(rgbaTex, x, y);
+		float4 curPix = make_float4(0.0f);;
+
+        for(int i = -r; i <= r; i++)  {
+            for(int j = -r; j <= r; j++)  {
+                curPix = tex2D(rgbaTex, x + j, y + i);
+                factor = (tex1D(gaussianTex, i + r) * tex1D(gaussianTex, j + r)) *     //domain factor
+                    euclideanLen(curPix, center, e_d); //range factor
+
+                t += factor * curPix;
+                sum += factor;
+            }
+        }
+
+
+		// TODO TODO TODO THIS LINE SUCKS!!!!!!!!!!!!!!! DOIT ETRE FAUSSE !!!!!!!!
+        od[y*w + x] = rgbaFloat4ToFloat2(t / sum); //rgbaFloatToInt( t / sum);
+    }
+}
+
+//extern "C" 
+void initTexture(int width, int height, void *pImage)
+{
+    // copy image data to array
+    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(8, 8, 8, 8, cudaChannelFormatKindUnsigned);
+   
+	mallocCUDAarray(Array, channelDesc, width, height);
+    mallocCUDAarray(tempArray, channelDesc, width, height);
+    //cutilSafeCall( cudaMemcpyToArray( d_Array, 0, 0, pImage, size, cudaMemcpyHostToDevice));
+	
+}
+
+void copyInCUDAarray(void *pImage, int size) {
+	copyToCUDAarray(Array, pImage, size * sizeof(float));
+}
+
+
+
+//extern "C"
+void freeTextures() {
+	releaseCUDAarray(Array);
+	releaseCUDAarray(tempArray);
+	releaseCUDAarray(gaussianArray);
+}
+
+//extern "C"
+void updateGaussian(float delta, int radius)
+{
+    int size = 2 * radius + 1;
+
+    mallocCUDA( gaussian, size );
+
+    //generate gaussian array
+    d_generate_gaussian<<< 1, size>>>(d_gaussian, delta, radius);
+
+    //create cuda array
+    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindFloat);
+    //cutilSafeCall( cudaMallocArray( &d_gaussianArray, &channelDesc, size, 1 )); 
+	 mallocCUDAarray( gaussianArray, channelDesc, size, 1); 
+    //cutilSafeCall( cudaMemcpyToArray( d_gaussianArray, 0, 0, d_gaussian, size * sizeof (float), cudaMemcpyDeviceToDevice));
+	copyToCUDAarrayD2D( gaussianArray, d_gaussian, size * sizeof (float));
+
+    // Bind the array to the texture
+    //cutilSafeCall( cudaBindTextureToArray( gaussianTex, d_gaussianArray, channelDesc));
+	bindCUDA(gaussianTex, gaussianArray, channelDesc);
+    releaseCUDA(gaussian);
+}
+
+
+
+
+/*
+    Perform 2D bilateral filter on image using CUDA
+
+    Parameters:
+    d_dest - pointer to destination image in device memory
+    width  - image width
+    height - image height
+    e_d    - euclidean delta
+    radius - filter radius
+    iterations - number of iterations
+*/
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// TODO: USE FLOAT INSTEAD !!!!!
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// RGBA version
+//extern "C" 
+double bilateralFilterRGBA(float *h_dest, float *d_dest,
+                           int width, int height,
+                           float e_d, int radius, int iterations,
+                           int nthreads) {
+	int max_i=width * height;
+
+	//copyHostToCUDA(dest,max_i);	
+
+    // Bind the array to the texture
+	bindCUDA2(rgbaTex, Array);
+
+    for(int i=0; i<iterations; i++)  {
+        // sync host and start kernel computation timer
+        cutilSafeCall(cutilDeviceSynchronize());
+
+        dim3 gridSize((width + 16 - 1) / 16, (width + 16 - 1) / 16);
+        dim3 blockSize(16, 16);
+        d_bilateral_filter<<< gridSize, blockSize>>>(d_dest, e_d, width, height, radius);
+
+        // sync host and stop computation timer
+        //synchronizeCUDA();
+
+        if (iterations > 1) {
+            // copy result back from global memory to array
+			copyToCUDAarrayD2D(tempArray, d_dest, max_i * sizeof(float));
+			bindCUDA2(rgbaTex, tempArray);
+        }
+    }
+
+	copyCUDAToHost(dest,max_i);	
+
+    return 1.0f;//(dKernelTime/(double)iterations);
+}
+
+#endif

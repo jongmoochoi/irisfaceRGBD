@@ -1,0 +1,10 @@
+{
+	"0_inputExtList"		: [".bmp", ".pts"],
+	"1_numLdmks"			: 68,
+	"2_ldmk_metadata"		: "../config/HL_ldmks_metadataf.tsv", 
+	"3_refMesh_file"		: "../config/FaceEyesClosed.obj",
+	"4_deformableMesh_file"	: "../config/FaceNeutral.obj",
+	"5_b0_file"				: "../config/b0f.dat",
+	"6_B_file"				: "../config/Bf.dat",
+	"7_segsamTable_file"	: "../config/sampledTablef.dat"	
+}
