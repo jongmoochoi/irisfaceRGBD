@@ -20,7 +20,7 @@ python Preprocessing.py
 
 ### Step 2. Measure similarities between probe and gallery set
 
-Run follwoing command to calculate similaritie
+Run follwoing command to calculate similarities
 ```
 python Recognition.py
 ```
