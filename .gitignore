@@ -283,3 +283,4 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+IRIS 3D face recognition/Weights.caffemodel
