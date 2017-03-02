@@ -5,9 +5,8 @@
 
 # 3D Face Recogntion
 
-## Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn
-
 ## This is a 3D face recognition software. 
+Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn
 Input: 3D face of point clouds (.ply format) in Probe and Gallery folder
 Output: Similarities between probe and gallery
 
