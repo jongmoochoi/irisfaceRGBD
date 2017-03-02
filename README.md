@@ -6,9 +6,9 @@
 # 3D Face Recogntion
 
 ## This is a 3D face recognition software. 
-Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn
-Input: 3D face of point clouds (.ply format) in Probe and Gallery folder
-Output: Similarities between probe and gallery
+Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn <br />
+Input: 3D face of point clouds (.ply format) in Probe and Gallery folder  <br />
+Output: Similarities between probe and gallery 
 
 
 ### Step 1. Convert a 3D point cloud (.ply) into 2D depth map (.npy)
