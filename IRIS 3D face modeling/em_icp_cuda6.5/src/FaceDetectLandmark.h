@@ -8,7 +8,7 @@
 #include <dlib/image_processing/render_face_detections.h>
 #include <dlib/image_processing.h>
 #include <dlib/gui_widgets.h>
-#include "./Include/opencv/build/include/opencv2/core/types_c.h"
+#include <opencv2/core/types_c.h>
 
 
 using namespace dlib;

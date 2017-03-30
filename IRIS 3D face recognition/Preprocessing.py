@@ -8,7 +8,6 @@ from numpy import cross, eye, dot
 from scipy.linalg import expm3, norm
 from os import listdir
 from os.path import isfile, join
-import cv2
 
 
 def M(axis, theta):
@@ -57,7 +56,4 @@ for sDefaultPath in Paths:
         normalizedVerts = np.array(normalizedVerts_)
 
         sConverted = XYProjectedImage(normalizedVerts)
-
-        cv2.imshow("img2", sConverted)
-        cv2.waitKey(0)
         np.save(sFileName, sConverted)

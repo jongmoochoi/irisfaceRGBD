@@ -25,8 +25,8 @@
 #include <OpenNI.h>
 using namespace  openni;
 // OpenCV
-#include <cv.h>
-#include <highgui.h>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 
 // Defines
 #include "DATA.h"

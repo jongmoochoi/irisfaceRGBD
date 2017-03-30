@@ -14,7 +14,7 @@
 #include <cuda_runtime_api.h>
 #include <device_functions.h>
 #include <device_launch_parameters.h>
-#include "./Include/CUDA/shrUtils.h"
+//#include "shrUtils.h"
 
 
 //error

@@ -1,5 +1,5 @@
 #include <opencv/cxcore.hpp>
-#include "src/DATA.h"
+#include "DATA.h"
 #include <iostream>
 
 using namespace std;
