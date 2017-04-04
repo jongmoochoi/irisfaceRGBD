@@ -1,7 +1,9 @@
 # irisfaceRGBD
-
-
-
+fdf
+This file is part of the "USC IRIS 3D face modeling and recognition software"
+developed at the University of Southern California by USC IRIS.
+Copyright (c) 2017 fasf of Southern California.  All Rights Reserved.
+dasda
 
 # 3D Face Recogntion
 
@@ -26,3 +28,12 @@ python Recognition.py
 ```
 
 
+# 3D Face Modeling
+
+## This is a 3D face modeling software. 
+Dependencies: dlib, pthreads, boost, opencv, OpenNI2, OpenMesh, Eigen, EM-ICP, CUDA, lapack, OpenCV
+### Visual Studio 2013 and 2015 Solutions (x64 Release)
+Visual Studio 2013, CUDA8.0, OpenCV 2.4.9, dlib 18.17, pthreads 2.9.1, boost 1.55, OpenMesh 3.2 </br>
+Visual Studio 2015, CUDA8.0, OpenCV 2.4.9, dlib 18.17, pthreads 2.9.1, boost 1.59, OpenMesh 4.1
+
+##
