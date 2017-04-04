@@ -3,15 +3,13 @@
 //      developed at the University of Southern California by
 //      Donghyun Kim, Matthias Hernandez, Jongmoo Choi, Gerard Medioni, 
 //-----------------------------------------------------------------------------------------
-//      Copyright (c) 2017 University of Southern California.  All Rights Reserved.
+//      Copyright (c) 2012 University of Southern California.  All Rights Reserved.
 
 #include <iostream>
 #include <cstdio>
 #include <cmath>
 #include <ctime>
 #include <list>
-
-//cude
 
 #include "cudaMem.h"
 #include <device_launch_parameters.h>
@@ -37,7 +35,7 @@
 
 #include <opencv2/gpu/gpu.hpp>
 #include <windows.h>
-// dlib ,
+
 #include "facePoseEstimation.h"
 #include "FaceDetectLandmark.h"
 
@@ -190,7 +188,6 @@ void findFaceCenter(float *h_pReal, float *center_x, float *center_y, float NORM
 }
 
 
-void moveToFaceCenter(float *h_X, int nb_X, float center_x, float center_y);
 void moveToFaceCenter(float *h_X, int nb_X, float center_x, float center_y)
 {
 	int	i_x = 0,
@@ -805,7 +802,7 @@ int main(int argc, char **argv){
 
 
 	////dlib
-	numberOfPoseEstimation = 0;
+
 	cv_image<bgr_pixel> cimg;
 	frontal_face_detector detector = get_frontal_face_detector();
 	std::vector<dlib::rectangle> faces;
@@ -889,7 +886,7 @@ int main(int argc, char **argv){
 		//////////////////////////////////////////////////////////////////////
 		displayDepthImage(d_pReal, d_dData, h_dData, d_validityMask, d_palette, isHeat, XN_VGA_X_RES, XN_VGA_Y_RES);
 		
-		displayImageMap(	h_rgbData,			// TODO : ON GPU WHEN USING COLOR???
+		displayImageMap(	h_rgbData,			// 
 							pImageMap);
 
 		faceDetector.setValidityMask(h_validityMask);
@@ -899,16 +896,12 @@ int main(int argc, char **argv){
 
 		// Find the box containing the mask values
 		maskBox = ( faceDetected ? faceDetector.getFaceBox() : nullBox);
-		if (printPointCloud)
-		{
-			counts++;
-		}
 		 
 		// Extract the points on the face
 		if (faceDetected) {
 			// Compute the normal map on the face		
 			// Extract the face
-			//dlib,,
+		
 			for (int i = 0; i < MAX_I3; i++)
 			{
 				h_face[i] = 0;
@@ -916,43 +909,17 @@ int main(int argc, char **argv){
 
 			extractFace(h_face, h_pReal, maskBox, h_validityMask, &nb_keyPoints, &NORMALIZATION_FACTOR, &CENTROID, first);
 
-			if (printPointCloud)
 			{
-				char temp[10];
-				char temp2[20];
-
-				memset(temp, 0, 10);
-				memset(temp2, 0, 20);
-				itoa(counts, temp, 10);
-				strcat(temp2, ".\\origin\\");
-				strcat(temp2, temp);
-				strcat(temp2, ".obj");
-				printPointClouds(h_face, MAX_I, temp2);
-			}
-
-
-			{
-				//IplImage *ccimg = cvCreadeletePointUnderChinteImage(cvSize(440,280),IPL_DEPTH_8U,3);
-
-				//cvSetImageROI(img, cvRect(100,100,440,280));
-				//cvCopy(img,ccimg);
 				cimg = img;
 
 				start = clock();
 				std::vector<full_object_detection> shapes;
 
 				faces = detector(cimg);
-				//dlib::rectangle faceRecct(faceDetector.getFaceBox().getLeftX() - 100, faceDetector.getFaceBox().getTopY() - 100, faceDetector.getFaceBox().getWidth() + 200, faceDetector.getFaceBox().getHeight() + 200);
-				//	if (faces.size()>0)
-				//	{
+				
 				if (faces.size() > 0){
 					static int number = 0;
-
 					full_object_detection shape = sp(cimg, faces[0]);
-					//cout << "number of parts: "<< shape.num_parts() << endl;
-					//cout << "pixel position of first part:  " << shape.part(0) << endl;
-					//	cout << "pixel position of second part: " << shape.part(1) << endl;
-
 					shapes.push_back(shape);
 
 					if (shapes[0].num_parts() == 68)
@@ -965,11 +932,6 @@ int main(int argc, char **argv){
 							if (i == 22)
 							{
 								eyebrow_x = a.x();
-								
-							}
-
-							if (i == 22)
-							{
 								eyebrow_y = a.y();
 								eyebrow_y_real = a.y();
 							}
@@ -978,24 +940,9 @@ int main(int argc, char **argv){
 						process(R, T);
 						FaceSegmentation sBorder(landmarkPts);
 
-
 						findFaceCenter(h_pReal, &eyebrow_x, &eyebrow_y, NORMALIZATION_FACTOR);
 						float vals2[9] = { 1, 0, 0, 0, -1, 0, 0, 0,  1 };
-						float val_[9] = {-1, 0, 0, 0, -1, 0, 0, 0, 1 };
-
-						// R,T evaluation
-						std::vector<cv::Point3d> framePoints;
-						std::vector<cv::Point2d> imgFramePoints;
-
-						framePoints.push_back(cv::Point3d(0.0, 0.0, 0.0));
-						framePoints.push_back(cv::Point3d(60.0, 0.0, 0.0));
-						framePoints.push_back(cv::Point3d(0.0, 60.0, 0.0));
-						framePoints.push_back(cv::Point3d(0.0, 0.0, 60.0));
-
-						cv::Mat rvec = cv::Mat(cv::Size(3, 1), CV_64F);
-						cv::Mat tvec = cv::Mat(cv::Size(3, 1), CV_64F);
-
-
+						
 						cv::Mat inv = R.inv();
 						cv::Mat inv_T = -R.inv()*T;
 						for (int i = 0; i < 3; i++)
@@ -1007,89 +954,30 @@ int main(int argc, char **argv){
 								R_matrix[i * 3 + j] = (float)temp;
 							}
 						}
-
-						if ((R.rows == 3 && R.cols == 3))
-						{
-							cv::Rodrigues(R, rvec);
-							cv::Mat distCoeffs = cv::Mat::zeros(8, 1, CV_64F);
-							cv::Mat out_K = cv::Mat(3, 3, CV_64F);
-							cv::projectPoints(framePoints, rvec, T, out_K, distCoeffs, imgFramePoints);
-						}
-						if (imgFramePoints.size() > 0)
-						{
-							cvLine(currentImg, cvPoint(0, 0), cvPoint(30, 30), CV_RGB(255, 255, 0), 2, 8, 0);
-							cvLine(currentImg, cvPoint((int)imgFramePoints[0].x, (int)imgFramePoints[0].y), cvPoint((int)imgFramePoints[1].x, (int)imgFramePoints[1].y), CV_RGB(255, 255, 0), 6, 8, 0);
-							cvLine(currentImg, cvPoint((int)imgFramePoints[0].x, (int)imgFramePoints[0].y), cvPoint((int)imgFramePoints[2].x, (int)imgFramePoints[2].y), CV_RGB(0, 255, 0), 6, 8, 0);
-							cvLine(currentImg, cvPoint((int)imgFramePoints[0].x, (int)imgFramePoints[0].y), cvPoint((int)imgFramePoints[3].x, (int)imgFramePoints[3].y), CV_RGB(0, 0, 255), 6, 8, 0);
-						}
-						/////
-
-						numberOfPoseEstimation++;
 						
 						if (pose_estimation_R)
 						{
 							static int count = 0;
-							char temp[10];
-							char temp2[20];
-							
-							memset(temp, 0, 10);
-							memset(temp2, 0, 20);
-							if (printPointCloud  && 0)
-							{
-								memset(temp, 0, 10);
-								memset(temp2, 0, 20);
-								itoa(counts, temp, 10);
-								strcat(temp2, ".\\before_cut\\");
-								strcat(temp2, temp);
-								strcat(temp2, ".obj");
-								printPointClouds(h_face, MAX_I, temp2);
-							}
-							
 							static int check = 0;
 							
 							// segment face
 
 							sBorder.setEyebrow(eyebrow_x, eyebrow_y_real);
-							sBorder.deletePointUnderChin(h_face, MAX_I, CENTROID.getXr(), CENTROID.getYr(), CENTROID.getZr(),NORMALIZATION_FACTOR, nb_keyPoints);
+							sBorder.deletePointUnderChin(h_face, MAX_I, CENTROID.getXr(), CENTROID.getYr(), CENTROID.getZr(),NORMALIZATION_FACTOR);
 							sBorder.rearrangeArray(&h_face, MAX_I, nb_keyPoints);
-
-							if (printPointCloud)
-							{
-								memset(temp, 0, 10);
-								memset(temp2, 0, 20);
-								itoa(counts, temp, 10);
-								strcat(temp2, ".\\before\\");
-								strcat(temp2, temp);
-								strcat(temp2, ".obj");
-								printPointClouds(h_face, MAX_I,temp2);
-							}
 
 							moveToFaceCenter(h_face, MAX_I, eyebrow_x, eyebrow_y);
 							applyRotation(h_face, MAX_I, vals2);
 							applyInvRotation(h_face, MAX_I, R_matrix);
 							applyRotation(h_face, MAX_I, vals2);
 							
-							if (printPointCloud)
-							{	
-								memset(temp, 0, 10);
-								itoa(counts, temp, 10);
-								memset(temp2, 0, 20);
-								strcat(temp2, ".\\after\\");
-								strcat(temp2, temp);
-								strcat(temp2, ".obj");
-								printPointClouds(h_face, MAX_I, temp2);
-							}
-
-							cout << "pose estimation" << number++  << endl;
-							//////////////////////////////////
-							// display the face landmark
+							cout << "frame " << number++  << endl;
 						}
 
 						if (landmark || pose_estimation_R)
 						{
 							// Extract the points
 							selectRandomPointOnFace(selectedPoints, nb_keyPoints, NB_PTS_X);
-							//////////////////////////////////////////////////////////////////////////////////////////////
 							// Demean/Normalize face for EM-ICP
 							//// The centroid is the actual centroid, the normalization factor is the one of the first frame
 							setH_X(h_X, NB_PTS_X, selectedPoints, h_face);
@@ -1097,47 +985,18 @@ int main(int argc, char **argv){
 						
 					}
 					else
-					{
-						if (landmark || pose_estimation_R)
-						{
-							nb_keyPoints = 0;
-						}
-					}
-					
-				}
-				else
-				{
-					if (landmark || pose_estimation_R)
-					{
 						nb_keyPoints = 0;
-					}
-				
 				}
+				else nb_keyPoints = 0;
 
-	
 				shapes.clear();
 				faces.clear();
 				landmarkPts.clear();
 			}
-
-			if (oldversion)
-			{ 
-				// printPointClouds(h_face, MAX_I, "hface.obj");
-				// Extract the points
-				selectRandomPointOnFace(selectedPoints, nb_keyPoints, NB_PTS_X);
-				//////////////////////////////////////////////////////////////////////////////////////////////
-				// Demean/Normalize face for EM-ICP
-				//// The centroid is the actual centroid, the normalization factor is the one of the first frame
-				setH_X(h_X, NB_PTS_X, selectedPoints, h_face);
-			}
-
 		} 
 	
-		else {
-			nb_keyPoints = 0;
-			//for (int i=0; i<MAX_I; i++)
-			//	h_nData[i] = 0;
-		}
+		else nb_keyPoints = 0;
+
 
 		//////////////////////////////////////////////////////////////////////
 		// Compute the pose
@@ -1152,7 +1011,7 @@ int main(int argc, char **argv){
 		}
 		
 		// Update Ysize and h_Y depending on the mode
-		if (previous_mode!=mode)
+		if (previous_mode != mode)
 			allocateMemory=true;
 		switch (mode) {
 			case M_LEFT:
@@ -1353,7 +1212,7 @@ int main(int argc, char **argv){
 		// Save the raw data 
 		if (saveFrames) 
 		{
-			char o[100], p[100],q[100],q1[100];
+			char o[100], p[100];
 			FILE *f;
 			sprintf(o, ".\\frames\\s%d_frame%d.jpg", session, frame_index);
 			sprintf(p, ".\\frames\\s%d_data%d.txt", session, frame_index++);

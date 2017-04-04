@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------------------
+//	This file is part of the "USC IRIS 3D face modeler" 
+//      developed at the University of Southern California by
+//      Donghyun Kim, Matthias Hernandez, Jongmoo Choi, Gerard Medioni, 
+//-----------------------------------------------------------------------------------------
+//      Copyright (c) 2012 University of Southern California.  All Rights Reserved.
+
 #include <opencv/cxcore.hpp>
 #include "DATA.h"
 #include <iostream>
@@ -48,7 +55,7 @@ public:
 
 	bool underChinBorder(float sX, float sY)
 	{
-		int i = this->findChinIndex(sX, sY);
+		int i = this->findChinIndex(sX);
 		if (i >= 0)
 		{ 
 			float slope = mSlope[i];
@@ -67,7 +74,7 @@ public:
 
 
 
-	bool aboveEyeBrow(float sX, float sY)
+	bool aboveEyeBrow(float sY)
 	{
 
 		if (sY < this->eyebrow_y)
@@ -87,7 +94,7 @@ public:
 	}
 
 
-	int findChinIndex(float sX, float sY)
+	int findChinIndex(float sX)
 	{
 		int i = 0;
 		if (sX < mChinMark[0].x)
@@ -96,18 +103,16 @@ public:
 		}
 		else if (sX > mChinMark[mChinMark.size() - 1].x)
 		{
-			return mChinMark.size() - 2;
+			return (int)mChinMark.size() - 2;
 		}
 
 		for (std::vector<cv::Point2f>::iterator begin = mChinMark.begin(); begin != mChinMark.end(); begin++)
 		{
 			float x = begin->x;
-			float y = begin->y;
 			std::vector<cv::Point2f>::iterator next = begin + 1;
 			if (next != mChinMark.end())
 			{
 				float x2 = next->x;
-				float y2 = next->y;
 				if (x <= sX && sX <= x2)
 				{
 			//		cout << "find index = " << i << endl;
@@ -121,19 +126,18 @@ public:
 		return -1;
 	}
 
-	void deletePointUnderChin(float *h_X, int nb_X, float centroidX, float centroidY, float centroidZ,float NORMALIZATION_FACTOR, int &nb_point)
+	void deletePointUnderChin(float *h_X, int nb_X, float centroidX, float centroidY, float centroidZ,float NORMALIZATION_FACTOR)
 	{
-		float X, Y, Z = 0;
+		float X, Y;
 		int	i_x = 0,
 			i_y = nb_X,
 			i_z = 2 * nb_X;
 		float x = 0.0f,
 			y = 0.0f,
 			z = 0.0f;
-		float avg_z = 0.0f;
-		int number_z = 0;
+
 		for (int i = 0; i<nb_X; i++) {
-			X = 0; Y = 0; Z = 0;
+			X = 0; Y = 0;
 
 			x = h_X[i_x];
 			y = h_X[i_y];
@@ -159,7 +163,7 @@ public:
 					
 				}
 
-				else if (this ->aboveEyeBrow(X,Y))
+				else if (this ->aboveEyeBrow(Y))
 				{
 					h_X[i_x] = 0;
 					h_X[i_y] = 0;

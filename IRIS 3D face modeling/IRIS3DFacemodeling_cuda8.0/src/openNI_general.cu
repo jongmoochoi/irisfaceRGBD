@@ -44,7 +44,7 @@
 #include <device_launch_parameters.h>
 
 #include <device_functions.h>
-#define __CUDACC__
+
 //////////////////////////////////////////////
 // TODO REMOVE THE WEIRD TEXTURE CRAP ????? //
 //////////////////////////////////////////////

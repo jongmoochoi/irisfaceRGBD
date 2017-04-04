@@ -326,7 +326,6 @@ void selectRandomPointOnFace(	int *selectedPoints,
 								int nb_points_on_face,
 								int nb_random_samples) {
 	int index=0;
-	int r_X=0, r_Y=0;
 
 	//int range = (int) ((float)nb_points_on_face / (float)nb_random_samples +0.5f);
 	//int shift = 0;
@@ -353,7 +352,6 @@ void selectRandomPointOnFace(	int *selectedPoints,
 								int nb_points_on_face,
 								int nb_random_samples) {
 	int index=0;
-	int r_X=0, r_Y=0;
 
 
 	srand((int)time(NULL));

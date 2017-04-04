@@ -1,3 +1,11 @@
+//-----------------------------------------------------------------------------------------
+//	This file is part of the "USC IRIS 3D face modeler" 
+//      developed at the University of Southern California by
+//      Matthias Hernandez, Jongmoo Choi, Gerard Medioni, 
+//      Published: Laser Scan Quality 3-D Face Modeling Using a Low-Cost Depth Camera, EUSIPCO 2012.
+//-----------------------------------------------------------------------------------------
+//      Copyright (c) 2012 University of Southern California.  All Rights Reserved.
+
 #include "stdafx.h"
 #include "FaceBox.h"
 
