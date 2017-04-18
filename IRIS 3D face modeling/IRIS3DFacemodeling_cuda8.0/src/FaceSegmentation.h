@@ -163,12 +163,12 @@ public:
 					
 				}
 
-				else if (this ->aboveEyeBrow(Y))
-				{
-					h_X[i_x] = 0;
-					h_X[i_y] = 0;
-					h_X[i_z] = 0;
-				}
+				//else if (this ->aboveEyeBrow(Y))
+				//{
+				//	h_X[i_x] = 0;
+				//	h_X[i_y] = 0;
+				//	h_X[i_z] = 0;
+				//}
 
 				else if (z > centroidZ)
 				{

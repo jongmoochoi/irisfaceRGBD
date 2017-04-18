@@ -31,24 +31,22 @@
     <ClCompile Include="Include_vs2015\dlib-18.17\dlib\all\source.cpp">
       <Filter>dlib</Filter>
     </ClCompile>
-    <ClCompile Include="Include_vs2015\poseEstimation\cameraModule.cpp">
+    <ClCompile Include="src\cameraModule.cpp">
       <Filter>poseEstimation</Filter>
     </ClCompile>
-    <ClCompile Include="Include_vs2015\poseEstimation\facePoseEstimation.cpp">
+    <ClCompile Include="src\mesh.cpp">
       <Filter>poseEstimation</Filter>
     </ClCompile>
-    <ClCompile Include="Include_vs2015\poseEstimation\json.cpp">
+    <ClCompile Include="src\utils.cpp">
       <Filter>poseEstimation</Filter>
     </ClCompile>
-    <ClCompile Include="Include_vs2015\poseEstimation\mesh.cpp">
+    <ClCompile Include="src\json.cpp">
       <Filter>poseEstimation</Filter>
     </ClCompile>
-    <ClCompile Include="Include_vs2015\poseEstimation\setup.cpp">
+    <ClCompile Include="src\setup.cpp">
       <Filter>poseEstimation</Filter>
     </ClCompile>
-    <ClCompile Include="Include_vs2015\poseEstimation\utils.cpp">
-      <Filter>poseEstimation</Filter>
-    </ClCompile>
+    <ClCompile Include="src\IRIS_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\shrUtils.h">
@@ -72,15 +70,16 @@
     <ClInclude Include="src\rply.h" />
     <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\Voxel.h" />
-    <ClInclude Include="Include_vs2015\poseEstimation\cameraModule.h">
+    <ClInclude Include="src\cameraModule.h">
       <Filter>poseEstimation</Filter>
     </ClInclude>
-    <ClInclude Include="Include_vs2015\poseEstimation\facePoseEstimation.h">
+    <ClInclude Include="src\json.h">
       <Filter>poseEstimation</Filter>
     </ClInclude>
-    <ClInclude Include="Include_vs2015\poseEstimation\json.h">
+    <ClInclude Include="src\facePoseEstimation.h">
       <Filter>poseEstimation</Filter>
     </ClInclude>
+    <ClInclude Include="src\IRIS_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\bilateral_filter.cu">

@@ -169,11 +169,9 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Include_vs2013\poseEstimation\cameraModule.h" />
-    <ClInclude Include="Include_vs2013\poseEstimation\facePoseEstimation.h" />
-    <ClInclude Include="Include_vs2013\poseEstimation\json.h" />
     <ClInclude Include="src\3dregistration.h" />
     <ClInclude Include="src\algebra.h" />
+    <ClInclude Include="src\cameraModule.h" />
     <ClInclude Include="src\cudaMem.h" />
     <ClInclude Include="src\DATA.h" />
     <ClInclude Include="src\eig3.h" />
@@ -181,7 +179,10 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="src\FaceBox.h" />
     <ClInclude Include="src\FaceDetectLandmark.h" />
     <ClInclude Include="src\FaceDetector.h" />
+    <ClInclude Include="src\facePoseEstimation.h" />
     <ClInclude Include="src\FaceSegmentation.h" />
+    <ClInclude Include="src\IRIS_utils.h" />
+    <ClInclude Include="src\json.h" />
     <ClInclude Include="src\Modeling.h" />
     <ClInclude Include="src\Modeling_cu.h" />
     <ClInclude Include="src\openNI_general.h" />
@@ -194,27 +195,28 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Include_vs2013\dlib-18.17\dlib\all\source.cpp" />
-    <ClCompile Include="Include_vs2013\poseEstimation\cameraModule.cpp" />
-    <ClCompile Include="Include_vs2013\poseEstimation\facePoseEstimation.cpp" />
-    <ClCompile Include="Include_vs2013\poseEstimation\json.cpp" />
-    <ClCompile Include="Include_vs2013\poseEstimation\mesh.cpp" />
-    <ClCompile Include="Include_vs2013\poseEstimation\setup.cpp" />
-    <ClCompile Include="Include_vs2013\poseEstimation\utils.cpp" />
     <ClCompile Include="src\algebra.cpp" />
+    <ClCompile Include="src\cameraModule.cpp" />
     <ClCompile Include="src\eig3.cpp" />
     <ClCompile Include="src\emicp_cpu.cpp" />
     <ClCompile Include="src\engine.cpp" />
     <ClCompile Include="src\FaceBox.cpp" />
     <ClCompile Include="src\FaceDetectLandmark.cpp" />
     <ClCompile Include="src\FaceDetector.cpp" />
+    <ClCompile Include="src\facePoseEstimation.cpp" />
     <ClCompile Include="src\FaceSegmentation.cpp" />
     <ClCompile Include="src\findRTfromS.cpp" />
     <ClCompile Include="src\icp.cpp" />
+    <ClCompile Include="src\IRIS_utils.cpp" />
+    <ClCompile Include="src\json.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\mesh.cpp" />
     <ClCompile Include="src\Modeling.cpp" />
     <ClCompile Include="src\orbcam.cpp" />
     <ClCompile Include="src\poseEstimation.cpp" />
     <ClCompile Include="src\rply.c" />
+    <ClCompile Include="src\setup.cpp" />
+    <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\Voxel.cpp" />
   </ItemGroup>
   <ItemGroup>
