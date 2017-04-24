@@ -31,7 +31,7 @@ python Recognition.py
 
 # 3D Face Modeling
 
-## This is a 3D face modeling software.Structure
+## This is a 3D face modeling software.
 Description
 This Window library supports 3D face modeling with the PrimeSense or Kinect 1.0 camera. It supports functions of face modeling. 
 There are two supporting versions: (1) Visual Studio 2013 and (2) 2015 Solutions (x64 Release)
@@ -53,7 +53,7 @@ This package includes 4 main folders:
 Visual Studio 2013, CUDA8.0, OpenCV 2.4.9, dlib 18.17, pthreads 2.9.1, boost 1.55, OpenMesh 3.2 </br>
 Visual Studio 2015, CUDA8.0, OpenCV 2.4.9, dlib 18.17, pthreads 2.9.1, boost 1.59, OpenMesh 4.1
 
-### Configure the project properties
+### Configuration of the project properties
 1.	Go to Configuration Properties → C/C++ → General → Additional Include Directories. Include additional include directories, as shown below:
 ---
 <p align="center">
@@ -67,6 +67,6 @@ Visual Studio 2015, CUDA8.0, OpenCV 2.4.9, dlib 18.17, pthreads 2.9.1, boost 1.5
 
 3. 	Go to Configuration Properties → Linker → Input → Additional Dependencies, as shown below: 
 <p align="center">
-  <img src="./includeadddep.PNG" width="700"/>
+  <img src="./includeadddep.PNG" width="700" height = "600"/>
 </p>
 ##
