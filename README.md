@@ -33,13 +33,15 @@ python Recognition.py
 # 3D Face Modeling
 
 ## This is a 3D face modeling software.
-Description
+Description <br />
 This Window library supports 3D face modeling with the PrimeSense or Kinect 1.0 camera. It supports functions of face modeling. 
 There are two supporting versions: (1) Visual Studio 2013 and (2) 2015 Solutions (x64 Release)
 
-Assumptions
+Assumptions <br />
 The program is for a single user at a time. The person should not stand farther than 1 meter away from the camera or closer than 40 cm to the camera. This version requires "frontal faces" as first input for face modeling, and it can cover pose changes.
 
+Input: RGB-D frame from a low-cost depth sensor (e.g. Kinnect or PrimeSense)
+Output: 3D face model (~/model/mymodel.ply)
 
 ## Structure
 This package includes 4 main folders:
@@ -70,4 +72,25 @@ Visual Studio 2015, CUDA8.0, OpenCV 2.4.9, dlib 18.17, pthreads 2.9.1, boost 1.5
 <p align="center">
   <img src="./includeadddep.PNG" width="700" height = "600"/>
 </p>
-##
+
+## Instructions
+
+
+
+
+## Demo
+
+1. Download the sample RGB-D video (https://drive.google.com/file/d/0B47nI8lp4t_CTm0zUjg1S3RXeW8/view?usp=sharing), and place the file ~/IRIS3DFacemodeling_cuda8.0
+2. Set command arguments as the name of the video file. 
+<p align="center">
+  <img src="./modelingdemo.PNG" width="700"/>
+</p>
+3. Run the program.
+ - modeling process
+<p align="center">
+  <img src="./demo1.PNG" width="700"/>
+</p>
+ - modeling result
+<p align="center">
+  <img src="./demo2.PNG" width="700"/>
+</p>
