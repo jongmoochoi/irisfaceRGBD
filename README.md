@@ -1,9 +1,9 @@
 # irisfaceRGBD
-fdf
+
 This file is part of the "USC IRIS 3D face modeling and recognition software"
 developed at the University of Southern California by USC IRIS.
 Copyright (c) 2017 fasf of Southern California.  All Rights Reserved.
-dasda
+Kim, Donghyun, et al. "Deep 3D Face Identification." arXiv preprint arXiv:1703.10714 (2017).
 
 # 3D Face Recogntion
 
