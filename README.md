@@ -73,14 +73,17 @@ Visual Studio 2015, CUDA8.0, OpenCV 2.4.9, dlib 18.17, pthreads 2.9.1, boost 1.5
   <img src="./includeadddep.PNG" width="700" height = "600"/>
 </p>
 
-## Instructions
+## How to use
 
-
-
+After starting, the program will display the RGB frames in real time & detected face bounding box. This program also will display a modeled face in real time. Here are your options for other processes: <br />
+•	Press key 'r' to reset a face modeling and start to make a new face modeling. The assumption of the program is that the first frame should be a frontal face. You can adequately choose a first frame which is a frontal face by resetting. <br />
+•	Press key 'd' to switch between the depth and the RGB display. <br />
+•	Press key 'q/ESC' to exit the program and produce the modeled face as OBJ and PLY file. The default output file is ./model/mymodel.obj, ./model/mymodel.ply <br />
+To visualize your output, open it with MeshLab http://meshlab.sourceforge.net/
 
 ## Demo
 
-1. Download the sample RGB-D video (https://drive.google.com/file/d/0B47nI8lp4t_CTm0zUjg1S3RXeW8/view?usp=sharing), and place the file ~/IRIS3DFacemodeling_cuda8.0
+1. Download the sample RGB-D video (https://drive.google.com/file/d/0B47nI8lp4t_CTm0zUjg1S3RXeW8/view?usp=sharing), and place the file in ~/IRIS3DFacemodeling_cuda8.0
 2. Set command arguments as the name of the video file. 
 <p align="center">
   <img src="./modelingdemo.PNG" width="700"/>
