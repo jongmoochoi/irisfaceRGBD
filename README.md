@@ -3,10 +3,10 @@
 This file is part of the "USC IRIS 3D face modeling and recognition software" <br />
 developed at the University of Southern California by USC IRIS. <br />
 Copyright (c) 2017 fasf of Southern California.  All Rights Reserved. <br />
-Kim, Donghyun, et al. "Deep 3D Face Identification." arXiv preprint arXiv:1703.10714 (2017). <br />
+
 
 # 3D Face Recogntion
-
+Kim, Donghyun, et al. "Deep 3D Face Identification." arXiv preprint arXiv:1703.10714 (2017). <br />
 ## This is a 3D face recognition software. 
 
 Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn <br />
