@@ -10,6 +10,7 @@ dasda
 ## This is a 3D face recognition software. 
 
 Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn <br />
+Pre-trained Weight (https://drive.google.com/file/d/0B47nI8lp4t_CTUVxc3Y4b29VR2c/view?usp=sharing) <br />
 Input: 3D face of point clouds (.ply format) in Probe and Gallery folder  <br />
 Output: Similarities between probe and gallery 
 
