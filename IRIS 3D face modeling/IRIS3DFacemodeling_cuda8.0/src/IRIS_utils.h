@@ -10,6 +10,13 @@ void init_RT(float *h_R, float *h_t);
 void findFaceCenter(float *h_pReal, float *center_x, float *center_y, float NORMAL_FACOTR, float centroidX, float centroidY);
 /**********************************************/
 /* Create a rotation matrix from euler angles	*/
+//-----------------------------------------------------------------------------------------
+//	This file is part of the "USC IRIS 3D face modeler" 
+//      developed at the University of Southern California by
+//      Donghyun Kim, Matthias Hernandez, Jongmoo Choi, Gerard Medioni, 
+//-----------------------------------------------------------------------------------------
+//      Copyright (c) 2012 University of Southern California.  All Rights Reserved.
+
 void eulerAngles2rotationMatrix(CvMat *out, float a, float b, float c);
 /* Find if two matrices are equal	*/
 void displayRendering(IplImage *img, float *h_R, CvPoint pt, float RScale);

@@ -433,9 +433,7 @@ int main(int argc, char **argv){
 	
 
 	bool saveMesh=true;
-	//float		y_left_max=0.0f, 
-	//			y_right_max=0.0f;
-	////////////////////////////////////////////////////////////////////////
+
 	// Loop on frames
 	////////////////////////////////////////////////////////////////////////
 	if (isRecord && argc <= 1)
@@ -868,8 +866,7 @@ int main(int argc, char **argv){
 
 	//// Normals computation
 
-	float *h_mNormals;//, *d_mNormals;
-	h_mNormals = new float[MAX_IMG_INDEX_3];
+	float *h_mNormals = new float[MAX_IMG_INDEX_3];
 	//mallocCUDA(mNormals, MAX_IMG_INDEX_3);
 	// Compute h_pNormals
 

@@ -7,14 +7,10 @@
 //      Copyright (c) 2012 University of Southern California.  All Rights Reserved.
 
 
-
-
 #include "stdafx.h"
 #include "Modeling.h"
 #include "Modeling_cu.h"
 #include "CudaMem.h"
-
-
 
 /***************/
 /* Constructor	*/
