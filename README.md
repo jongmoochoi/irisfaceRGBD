@@ -1,34 +1,7 @@
 # irisfaceRGBD
-
 This file is part of the "USC IRIS 3D face modeling and recognition software" <br />
-developed at the University of Southern California by USC IRIS. <br />
-Copyright (c) 2017 fasf of Southern California.  All Rights Reserved. <br />
-
-
-# 3D Face Recogntion
-Kim, Donghyun, et al. "Deep 3D Face Identification." arXiv preprint arXiv:1703.10714 (2017). <br />
-## This is a 3D face recognition software. 
-
-Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn <br />
-Pre-trained Weight (https://drive.google.com/file/d/0B47nI8lp4t_CTUVxc3Y4b29VR2c/view?usp=sharing) <br />
-Input: 3D face of point clouds (.ply format) in Probe and Gallery folder  <br />
-Output: Similarities between probe and gallery 
-
-
-### Step 1. Convert a 3D point cloud (.ply) into 2D depth map (.npy)
-
-Run follwoing command to generate a 2D depth map in ./3DFace/Probe and ./3DFace/Gallery folder
-```
-python Preprocessing.py
-```
-
-### Step 2. Measure similarities between probe and gallery set
-
-Run follwoing command to calculate similarities
-```
-python Recognition.py
-```
-
+developed at the University of Southern California. <br />
+Copyright (c) 2017 University of Southern California.  All Rights Reserved. <br />
 
 # 3D Face Modeling
 
@@ -97,3 +70,28 @@ To visualize your output, open it with MeshLab http://meshlab.sourceforge.net/
 <p align="center">
   <img src="./demo2.PNG" width="700"/>
 </p>
+
+# 3D Face Recogntion
+Kim, D., Hernandez, M., Choi, J. and Medioni, G., 2017. Deep 3D Face Identification. arXiv preprint arXiv:1703.10714. <br />
+
+## This is a 3D face recognition software. 
+
+Dependencies: python 2, caffe (http://caffe.berkeleyvision.org/), numpy, scipy, sklearn <br />
+Pre-trained Weight (https://drive.google.com/file/d/0B47nI8lp4t_CTUVxc3Y4b29VR2c/view?usp=sharing) <br />
+Input: 3D face of point clouds (.ply format) in Probe and Gallery folder  <br />
+Output: Similarities between probe and gallery 
+
+
+### Step 1. Convert a 3D point cloud (.ply) into 2D depth map (.npy)
+
+Run follwoing command to generate a 2D depth map in ./3DFace/Probe and ./3DFace/Gallery folder
+```
+python Preprocessing.py
+```
+
+### Step 2. Measure similarities between probe and gallery set
+
+Run follwoing command to calculate similarities
+```
+python Recognition.py
+```
