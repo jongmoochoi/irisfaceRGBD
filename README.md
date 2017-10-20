@@ -110,6 +110,9 @@ opencv_videostab249.lib <br />
 
 ## Common Error
 1. If you get error in pthread, then make this change in pthread.h:
+<p align="center">
+  <img src="./pthread_error.png" width="700"/>
+</p> 
 
 2. Some OpenMesh errors occur when you are using Visual Studio 2015 SP3. If you are suing VS2015 SP3 and see the error: OpenMesh/Core/Mesh/PolyConnectivity.hh(86): error C2440: 'specialization': cannot convert from 'overloaded-function' to 'bool (__cdecl OpenMesh::ArrayKernel::* )(void) const' (compiling source file DataMeshItemCurvedPipe.cpp), you need to modify the error lines following: https://mailman.rwth-aachen.de/pipermail/openmesh/2016-June/001234.html
 
