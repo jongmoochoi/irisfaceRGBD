@@ -59,18 +59,17 @@ Click on Download freeglut 3.0.0 for MSVC under freeglut 3.0.0 MSVC Package sect
 
 4. Set the solution configurations and platforms as Release x64. Go to Project → Properties (or right click on 'IRIS3DFacemodeling_cuda8.0_vs2015' in the solution explorer, then click on Properties), make sure the active configuration and platform is Release and X64.
 
-5. To add 3rd party libraries into the project, there are three project properties needed to be configurated. <br />
-
+5. To add 3rd party libraries into the project, there are three project properties needed to be configurated. <br /><br />
 Go to Configuration Properties → C/C++ → General → Additional Include Directories. Include additional include directories. They are usually the 'include' folders under the libraries main folders. When you get errors like 'XXX.h not found' when building the project, it basically means you did not include the directory of this header(.h) file.
 The screen shot below shows how the Additional Include Directories should look like. However the path before the libraries' name can differ from each user depending on where the libraries are extracted/installed.
 <p align="center">
-  <img src="./includedir.PNG" width="700"/>
-</p> 
+  <img src="./include.png" width="700"/>
+</p> <br />
 
 Go to Configuration Properties → Linker → General → Additional Library Directories. Include additional library directories.
 These directories include all the .lib files of all the libraries, as shown below. Same as the cinlude directories, the path before the libraries' name can differ from each user depending on where the libraries are extracted/installed.
 <p align="center">
-  <img src="./includelibdir.PNG" width="700"/>
+  <img src="./lib path.png" width="700"/>
 </p> 
 
 Go to Configuration Properties → Linker → Input → Additional Dependencies. We have already added all the lib files names. Usually you do not need to change anything here. But in case Additional Dependencies is somehow empty in your machinem, You can just copy the .lib files' names below to Additional Dependencies:
