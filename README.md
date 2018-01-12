@@ -177,17 +177,56 @@ Pre-trained Weight (https://drive.google.com/file/d/0B47nI8lp4t_CTUVxc3Y4b29VR2c
 Input: 3D face of point clouds (.ply format) in Probe and Gallery folder  <br />
 Output: Similarities between probe and gallery 
 
+## Preparation
+To make the recognition part work with modeling part better, we recommend you do it on Windows. The instruction of how to run it on Ubuntu is also provided for special purposes.
 
+### Windows
+#### Install Anaconda
+Firstly, please download and install Anaconda distribution at: https://www.anaconda.com/download/#macos as most of dependencies will be automatically installed. Anaconda tools are also handy if you want to do python projects in the future. In this project, we are using python 2.7 version.
+
+#### Install Plyfile
+We are using pip to install the dependency plyfile. Open Anaconda Prompt (click on the windows icon on the left bottom of your screen and type anaconda prompt, it should then appear if you have installed Anaconda successfully). Input:
+```
+python -m pip install --upgrade pip
+```
+You will either see the updating process of pip or a line:
+```
+‘Requirement already up-to-date’.
+```
+Then, just input:
+```
+‘pip install plyfile’ 
+```
+The plyfile dependency will be installed into your python.
+
+#### Install Caffe
+Then we are going to install Caffe. Go to: http://caffe.berkeleyvision.org/
+Under Documentation section, click on installation instruction. Then click on Windows under step-by-step instructions. You will be navigated to the github repository of Windows Caffe. Download the whole repository. Copy the ‘python’ folder of Caffe to the ‘site-packages’ folder of Anaconda. Assuming you installed both Anaconda and Caffe in C disk then you need to copy the Caffe folder under C:\caffe\python to C:\Anaconda\Lib\site-packages.
+
+#### Download pre-trained weight
+Download the pre-trained weight from:
+https://drive.google.com/file/d/0B47nI8lp4t_CTUVxc3Y4b29VR2c/view
+Then copy the Weights.caffemodel file to your IRIS 3D face recognition folder. 
+
+### Ubuntu
+
+## How to Run
+For easily debugging, you can firstly open the py files in spyder. Spyder is a Matlab-like anaconda tool which can track the values of vaiables easily. 
 ### Step 1. Convert a 3D point cloud (.ply) into 2D depth map (.npy)
 
-Run follwoing command to generate a 2D depth map in ./3DFace/Probe and ./3DFace/Gallery folder
-```
-python Preprocessing.py
-```
+Run Preprocessing.py to generate a 2D depth map in ./3DFace/Probe and ./3DFace/Gallery folder
 
 ### Step 2. Measure similarities between probe and gallery set
 
-Run follwoing command to calculate similarities
-```
-python Recognition.py
-```
+Run Recognition.py to calculate similarities
+
+## Troubleshooting
+
+1. Error 'No module named google.protobuf.internal'  when trying to run Recognition.py.
+Solution: pip install protobuf
+
+2. 'IndexError: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and' when running Preprocessing.py.
+Solution: change XYProjection.py line 43 from:
+im0 = aInd
+to:
+im0 = int(aInd)
