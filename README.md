@@ -201,7 +201,7 @@ The plyfile dependency will be installed into your python.
 
 #### Install Caffe
 Then we are going to install Caffe. Go to: http://caffe.berkeleyvision.org/
-Under Documentation section, click on installation instruction. Then click on Windows under step-by-step instructions. You will be navigated to the github repository of Windows Caffe. Download the whole repository. Copy the ‘python’ folder of Caffe to the ‘site-packages’ folder of Anaconda. Assuming you installed both Anaconda and Caffe in C disk then you need to copy the Caffe folder under C:\caffe\python to C:\Anaconda\Lib\site-packages.
+Under Documentation section, click on installation instruction. Then click on Windows under step-by-step instructions. You will be navigated to the github repository of Windows Caffe. In the README instruction, udner the Prebuilt binaries section, click on the link of rebuilt binary you need. For me, I download Visual Studio 2015,CUDA 8.0, Python 2.7: Caffe Release. Extract the zip file and copy everything in the ‘python’ folder of Caffe to the ‘site-packages’ folder of Anaconda. Assuming you installed both Anaconda and Caffe in C disk then you need to copy the Caffe folder under C:\caffe\python to C:\Anaconda\Lib\site-packages.
 
 #### Download pre-trained weight
 Download the pre-trained weight from:
