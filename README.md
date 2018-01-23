@@ -45,7 +45,7 @@ boost: https://sourceforge.net/projects/boost/files/boost-binaries/1.59.0/ <br /
 Choose the one that fit your machine. For me, I download boost_1_59_0-msvc-14.0-64.exe since I am using VS2015 on 64 bit computer.<br />
 Installing boost in the default path (usually in C:\local\boost_1_59_0) is recommanded since change path can create installing errors.<br /><br />
 CLAPACK:http://icl.cs.utk.edu/lapack-for-windows/lapack/<br />
-This is a tricky one. For this project, you only need to downloaded some specific rebuilt lib files and dll files.<br />
+This is a tricky one. For this project, you only need to downloaded some specific prebuilt lib files and dll files.<br />
 In LAPACK page, under Prebuilt dynamic libraries using Mingw section, download the dll and lib files of Ref BLAS and LAPACK. For me, I downloaded x64_dll and x64_lib of both Ref BLAS and LAPACK.<br />
 In CLAPACK page, under Prebuilt libraries section, doanload libf2c.lib.<br />
 You will have 5 files in total, liblapack.lib, libblas.lib, libblas.dll, liblapack.dll and libf2c.lib. You can manually create a folder named 'CLAPACK' and put all the 5 files into it.<br /><br />
@@ -138,7 +138,7 @@ Copy all the 4 files to the BuildCustomizations folder where the error told you 
 
 4. Some other OpenMesh errors occur in some very machines. We have not found a good way to directly fix them, you may need to Cmake your OpenMesh package before using it.
 
-5. In the file IRIS3DFacemodeling_cuda8.0_vs2015.vcxproj\IRIS3DFacemodeling_cuda8.0_vs2015.vcxproj, line 200, the path of source.cpp is set as where it is in our computer. If you extracted dlib library into different folders, you may get error. To correct it, find the sourse.cpp file in your dlib library, and replace the original path in IRIS3DFacemodeling_cuda8.0_vs2015.vcxproj line 200 with where you find your source.cpp.
+5. In the file IRIS3DFacemodeling_cuda8.0\IRIS3DFacemodeling_cuda8.0_vs2015.vcxproj, line 200, the path of source.cpp is set as where it is in our computer. If you extracted dlib library into different folders, you may get error. To correct it, find the sourse.cpp file in your dlib library, and replace the original path in IRIS3DFacemodeling_cuda8.0_vs2015.vcxproj line 200 with where you find your source.cpp.
 
 6. If the warning 'Not enough USB controller resources' shows up, go to irisfaceRGBD-master\IRIS 3D face modeling\x64\Release\OpenNI2\Drivers, open PS1080.ini, go to line 28, uncomment this line (delete the semicolon) and change the UsbInterface value to 0.
 
